@@ -1,4 +1,4 @@
-package hs.elementsmpFabric.client;
+package hs.elementmod.client;
 
 import net.fabricmc.api.ClientModInitializer;
 

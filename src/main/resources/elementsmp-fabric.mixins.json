@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "hs.elementsmpFabric.mixin",
+  "package": "hs.elementmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],

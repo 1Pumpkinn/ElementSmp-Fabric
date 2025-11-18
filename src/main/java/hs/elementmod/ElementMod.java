@@ -1,4 +1,4 @@
-package hs.elementsmpFabric;
+package hs.elementmod;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -16,18 +16,12 @@ import hs.elementmod.elements.abilities.AbilityManager;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
 
-/**
- * Main mod class for Element Mod (Fabric 1.21.10)
- * Converted from Paper plugin to Fabric mod
- */
 public class ElementMod implements ModInitializer {
     public static final String MOD_ID = "elementmod";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-
     private static ElementMod instance;
     private MinecraftServer server;
 
-    // Managers
     private DataStore dataStore;
     private ConfigManager configManager;
     private ElementManager elementManager;
@@ -42,15 +36,11 @@ public class ElementMod implements ModInitializer {
         instance = this;
         LOGGER.info("Initializing Element Mod...");
 
-        // Register server lifecycle events
         ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
-
-        // Register tick events for mana regeneration
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
-        // Register commands
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ElementCommand.register(dispatcher);
             ManaCommand.register(dispatcher);
@@ -59,45 +49,27 @@ public class ElementMod implements ModInitializer {
             ElementInfoCommand.register(dispatcher);
         });
 
-        LOGGER.info("Element Mod initialized successfully!");
+        LOGGER.info("Element Mod initialized!");
     }
 
     private void onServerStarting(MinecraftServer server) {
         this.server = server;
-        LOGGER.info("Server starting - initializing managers...");
-
-        try {
-            initializeManagers();
-            registerAbilities();
-            registerListeners();
-            LOGGER.info("All managers initialized successfully!");
-        } catch (Exception e) {
-            LOGGER.error("Failed to initialize managers", e);
-        }
+        initializeManagers();
+        registerAbilities();
+        registerListeners();
     }
 
     private void onServerStarted(MinecraftServer server) {
-        LOGGER.info("Server started - starting mana manager...");
-        if (manaManager != null) {
-            manaManager.start();
-        }
+        if (manaManager != null) manaManager.start();
     }
 
     private void onServerStopping(MinecraftServer server) {
-        LOGGER.info("Server stopping - saving data...");
-        if (dataStore != null) {
-            dataStore.flushAll();
-        }
-        if (manaManager != null) {
-            manaManager.stop();
-        }
+        if (dataStore != null) dataStore.flushAll();
+        if (manaManager != null) manaManager.stop();
     }
 
     private void onServerTick(MinecraftServer server) {
-        // Tick handlers for mana regeneration and passive effects
-        if (manaManager != null) {
-            manaManager.tick(server);
-        }
+        if (manaManager != null) manaManager.tick(server);
     }
 
     private void initializeManagers() {
@@ -106,65 +78,30 @@ public class ElementMod implements ModInitializer {
         this.trustManager = new TrustManager(dataStore);
         this.manaManager = new ManaManager(dataStore, configManager);
         this.abilityManager = new AbilityManager();
-        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager);
-        this.itemManager = new ItemManager(manaManager, configManager);
         this.elementRegistry = new ElementRegistry(abilityManager);
+        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager, abilityManager);
+        this.itemManager = new ItemManager(manaManager, configManager);
     }
 
     private void registerAbilities() {
-        // Register all element abilities
-        // TODO: Port all ability registrations from Paper
-        LOGGER.info("Registered all element abilities");
+        elementRegistry.registerAllAbilities();
     }
 
     private void registerListeners() {
-        // Register Fabric event listeners
         PlayerEventListeners.register();
         CombatEventListeners.register();
         AbilityEventListeners.register();
         ItemEventListeners.register();
-
-        LOGGER.info("Listeners registered successfully");
     }
 
-    // Getters
-    public static ElementMod getInstance() {
-        return instance;
-    }
-
-    public MinecraftServer getServer() {
-        return server;
-    }
-
-    public DataStore getDataStore() {
-        return dataStore;
-    }
-
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-
-    public ElementManager getElementManager() {
-        return elementManager;
-    }
-
-    public ManaManager getManaManager() {
-        return manaManager;
-    }
-
-    public TrustManager getTrustManager() {
-        return trustManager;
-    }
-
-    public ItemManager getItemManager() {
-        return itemManager;
-    }
-
-    public AbilityManager getAbilityManager() {
-        return abilityManager;
-    }
-
-    public ElementRegistry getElementRegistry() {
-        return elementRegistry;
-    }
+    public static ElementMod getInstance() { return instance; }
+    public MinecraftServer getServer() { return server; }
+    public DataStore getDataStore() { return dataStore; }
+    public ConfigManager getConfigManager() { return configManager; }
+    public ElementManager getElementManager() { return elementManager; }
+    public ManaManager getManaManager() { return manaManager; }
+    public TrustManager getTrustManager() { return trustManager; }
+    public ItemManager getItemManager() { return itemManager; }
+    public AbilityManager getAbilityManager() { return abilityManager; }
+    public ElementRegistry getElementRegistry() { return elementRegistry; }
 }
