@@ -1,0 +1,170 @@
+package hs.elementsmpFabric;
+
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.MinecraftServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import hs.elementmod.commands.*;
+import hs.elementmod.config.ConfigManager;
+import hs.elementmod.data.DataStore;
+import hs.elementmod.elements.ElementRegistry;
+import hs.elementmod.elements.abilities.AbilityManager;
+import hs.elementmod.listeners.*;
+import hs.elementmod.managers.*;
+
+/**
+ * Main mod class for Element Mod (Fabric 1.21.10)
+ * Converted from Paper plugin to Fabric mod
+ */
+public class ElementMod implements ModInitializer {
+    public static final String MOD_ID = "elementmod";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+    private static ElementMod instance;
+    private MinecraftServer server;
+
+    // Managers
+    private DataStore dataStore;
+    private ConfigManager configManager;
+    private ElementManager elementManager;
+    private ManaManager manaManager;
+    private TrustManager trustManager;
+    private ItemManager itemManager;
+    private AbilityManager abilityManager;
+    private ElementRegistry elementRegistry;
+
+    @Override
+    public void onInitialize() {
+        instance = this;
+        LOGGER.info("Initializing Element Mod...");
+
+        // Register server lifecycle events
+        ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
+        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+        ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
+
+        // Register tick events for mana regeneration
+        ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
+
+        // Register commands
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            ElementCommand.register(dispatcher);
+            ManaCommand.register(dispatcher);
+            TrustCommand.register(dispatcher);
+            UtilCommand.register(dispatcher);
+            ElementInfoCommand.register(dispatcher);
+        });
+
+        LOGGER.info("Element Mod initialized successfully!");
+    }
+
+    private void onServerStarting(MinecraftServer server) {
+        this.server = server;
+        LOGGER.info("Server starting - initializing managers...");
+
+        try {
+            initializeManagers();
+            registerAbilities();
+            registerListeners();
+            LOGGER.info("All managers initialized successfully!");
+        } catch (Exception e) {
+            LOGGER.error("Failed to initialize managers", e);
+        }
+    }
+
+    private void onServerStarted(MinecraftServer server) {
+        LOGGER.info("Server started - starting mana manager...");
+        if (manaManager != null) {
+            manaManager.start();
+        }
+    }
+
+    private void onServerStopping(MinecraftServer server) {
+        LOGGER.info("Server stopping - saving data...");
+        if (dataStore != null) {
+            dataStore.flushAll();
+        }
+        if (manaManager != null) {
+            manaManager.stop();
+        }
+    }
+
+    private void onServerTick(MinecraftServer server) {
+        // Tick handlers for mana regeneration and passive effects
+        if (manaManager != null) {
+            manaManager.tick(server);
+        }
+    }
+
+    private void initializeManagers() {
+        this.configManager = new ConfigManager();
+        this.dataStore = new DataStore();
+        this.trustManager = new TrustManager(dataStore);
+        this.manaManager = new ManaManager(dataStore, configManager);
+        this.abilityManager = new AbilityManager();
+        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager);
+        this.itemManager = new ItemManager(manaManager, configManager);
+        this.elementRegistry = new ElementRegistry(abilityManager);
+    }
+
+    private void registerAbilities() {
+        // Register all element abilities
+        // TODO: Port all ability registrations from Paper
+        LOGGER.info("Registered all element abilities");
+    }
+
+    private void registerListeners() {
+        // Register Fabric event listeners
+        PlayerEventListeners.register();
+        CombatEventListeners.register();
+        AbilityEventListeners.register();
+        ItemEventListeners.register();
+
+        LOGGER.info("Listeners registered successfully");
+    }
+
+    // Getters
+    public static ElementMod getInstance() {
+        return instance;
+    }
+
+    public MinecraftServer getServer() {
+        return server;
+    }
+
+    public DataStore getDataStore() {
+        return dataStore;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public ElementManager getElementManager() {
+        return elementManager;
+    }
+
+    public ManaManager getManaManager() {
+        return manaManager;
+    }
+
+    public TrustManager getTrustManager() {
+        return trustManager;
+    }
+
+    public ItemManager getItemManager() {
+        return itemManager;
+    }
+
+    public AbilityManager getAbilityManager() {
+        return abilityManager;
+    }
+
+    public ElementRegistry getElementRegistry() {
+        return elementRegistry;
+    }
+}
