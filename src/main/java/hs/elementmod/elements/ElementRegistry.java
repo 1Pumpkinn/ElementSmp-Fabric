@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  */
 public class ElementRegistry {
     private final AbilityManager abilityManager;
-    private final Map<ElementType, Supplier<Element>> elementSuppliers = new HashMap<>();
+    private final Map<ElementType, Supplier<hs.elementmod.elements.Element>> elementSuppliers = new HashMap<>();
 
     public ElementRegistry(AbilityManager abilityManager) {
         this.abilityManager = abilityManager;
