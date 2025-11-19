@@ -8,6 +8,10 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * Handles ability keybinds on the client side
+ * Sends packets to the server when keys are pressed
+ */
 public class AbilityKeybindHandler {
 
     private static KeyBinding ability1Key;
@@ -16,42 +20,52 @@ public class AbilityKeybindHandler {
     private static boolean ability1WasPressed = false;
     private static boolean ability2WasPressed = false;
 
-    private static final KeyBinding.Category CATEGORY =
-            new KeyBinding.Category(Identifier.of("elementmod", "abilities"));
+    // Create custom category for element mod keybindings
+    private static final KeyBinding.Category ELEMENT_MOD_CATEGORY =
+            KeyBinding.Category.create(Identifier.of("elementmod", "abilities"));
 
+    /**
+     * Register keybindings and tick listener
+     */
     public static void register() {
-
+        // Register keybindings with proper category
         ability1Key = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.elementmod.ability1",
+                "key.elementmod.ability1",       // translation key
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R,
-                CATEGORY
+                GLFW.GLFW_KEY_R,                 // default key: R
+                ELEMENT_MOD_CATEGORY             // category object
         ));
 
         ability2Key = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.elementmod.ability2",
+                "key.elementmod.ability2",       // translation key
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_F,
-                CATEGORY
+                GLFW.GLFW_KEY_F,                 // default key: F
+                ELEMENT_MOD_CATEGORY             // category object
         ));
 
-        // Tick event for handling input
+        // Register tick event to listen for key presses
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
+            // Handle ability 1 key
             if (ability1Key.isPressed()) {
                 if (!ability1WasPressed) {
                     AbilityPacket.send(1);
                     ability1WasPressed = true;
                 }
-            } else ability1WasPressed = false;
+            } else {
+                ability1WasPressed = false;
+            }
 
+            // Handle ability 2 key
             if (ability2Key.isPressed()) {
                 if (!ability2WasPressed) {
                     AbilityPacket.send(2);
                     ability2WasPressed = true;
                 }
-            } else ability2WasPressed = false;
+            } else {
+                ability2WasPressed = false;
+            }
         });
     }
 }

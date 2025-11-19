@@ -1,12 +1,17 @@
 package hs.elementmod.client;
 
-import hs.elementmod.network.AbilityPacket;
+import hs.elementmod.client.listeners.AbilityKeybindHandler;
 import net.fabricmc.api.ClientModInitializer;
 
+/**
+ * Client-side mod initializer
+ * Registers client-specific features like keybindings
+ */
 public class ElementModClient implements ClientModInitializer {
+
     @Override
     public void onInitializeClient() {
-        // Example: send ability 1 packet
-        AbilityPacket.send(1);
+        // Register keybindings for abilities
+        AbilityKeybindHandler.register();
     }
 }
