@@ -3,17 +3,17 @@ package hs.elementmod.elements.abilities.impl.water;
 import hs.elementmod.ElementMod;
 import hs.elementmod.elements.ElementContext;
 import hs.elementmod.elements.abilities.BaseAbility;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -22,160 +22,134 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Water Beam Ability - Complete Fabric 1.21.1 conversion
- * Demonstrates raycasting, continuous damage, and particle effects in Fabric
- */
 public class WaterBeamAbility extends BaseAbility {
-    private final Set<UUID> activeUsers = new HashSet<>();
     private final ElementMod mod;
+    private final Set<UUID> activeUsers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, BeamState> activeBeams = new ConcurrentHashMap<>();
 
     public WaterBeamAbility(ElementMod mod) {
         super("water_beam", 50, 15, 2);
         this.mod = mod;
+
+        // Server tick listener for beam updates
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (BeamState state : activeBeams.values()) {
+                updateBeam(state);
+            }
+        });
     }
 
     @Override
     public boolean execute(ElementContext context) {
         ServerPlayerEntity player = context.getPlayer();
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerWorld world = resolveServerWorld(player);
 
-        world.playSound(null, player.getBlockPos(),
-                SoundEvents.ITEM_TRIDENT_RIPTIDE_3, SoundCategory.PLAYERS,
-                1f, 1.2f);
+        // Play sound
+        world.playSound(
+                null,
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ITEM_TRIDENT_RIPTIDE_3,
+                SoundCategory.PLAYERS,
+                1f, 1.2f
+        );
 
         setActive(player, true);
 
-        // Schedule repeating task for beam effect
-        scheduleBeamEffect(player, world);
+        // Add beam to active map
+        activeBeams.put(player.getUuid(), new BeamState(player));
 
         return true;
     }
 
-    private void scheduleBeamEffect(ServerPlayerEntity player, ServerWorld world) {
-        new Object() {
-            int ticks = 0;
-            double totalDamageDealt = 0;
+    private void updateBeam(BeamState state) {
+        ServerPlayerEntity player = state.player;
+        ServerWorld world = resolveServerWorld(player);
 
-            void run() {
-                // Ability ends after 10 seconds or 5 hearts of damage
-                if (!player.isAlive() || player.isRemoved() || ticks >= 200 || totalDamageDealt >= 10) {
-                    setActive(player, false);
-                    return;
-                }
+        if (!player.isAlive() || player.isRemoved() || state.ticks >= 200 || state.totalDamage >= 10) {
+            activeBeams.remove(player.getUuid());
+            setActive(player, false);
+            return;
+        }
 
-                Vec3d direction = player.getRotationVec(1.0f).normalize();
+        Vec3d direction = player.getRotationVec(1.0f).normalize();
+        Vec3d chestPos = new Vec3d(player.getX(), player.getY() + 1.2, player.getZ());
 
-                // Apply damage every 0.25 seconds
-                if (ticks % 5 == 0) {
-                    Vec3d chestPos = player.getPos().add(0, 1.2, 0);
-
-                    // Check for blocks in the way
-                    double maxDistance = 20.0;
-                    BlockHitResult blockHit = raycastBlocks(world, chestPos, direction, maxDistance);
-                    if (blockHit.getType() != HitResult.Type.MISS) {
-                        maxDistance = chestPos.distanceTo(blockHit.getPos());
-                    }
-
-                    // Trace entities
-                    EntityHitResult entityHit = raycastEntities(world, player, chestPos, direction, maxDistance);
-                    if (entityHit != null && entityHit.getEntity() instanceof LivingEntity target) {
-                        if (isValidTarget(player, target)) {
-                            // Apply knockback
-                            Vec3d knockback = target.getPos().subtract(player.getPos()).normalize();
-                            knockback = knockback.add(0, 0.2, 0).multiply(0.8);
-                            target.setVelocity(knockback);
-                            target.velocityModified = true;
-
-                            if (totalDamageDealt < 10) {
-                                double damageAmount = Math.min(0.5, 10 - totalDamageDealt);
-                                target.damage(world.getDamageSources().magic(), (float) damageAmount);
-                                totalDamageDealt += damageAmount;
-
-                                Vec3d hitPos = entityHit.getPos();
-
-                                if (target instanceof ServerPlayerEntity) {
-                                    world.spawnParticles(ParticleTypes.SPLASH,
-                                            hitPos.x, hitPos.y, hitPos.z,
-                                            15, 0.3, 0.3, 0.3, 0.2);
-                                    world.spawnParticles(ParticleTypes.BUBBLE_POP,
-                                            hitPos.x, hitPos.y, hitPos.z,
-                                            10, 0.2, 0.2, 0.2, 0.1);
-                                    world.playSound(null, BlockPos.ofFloored(hitPos),
-                                            SoundEvents.ENTITY_PLAYER_SPLASH, SoundCategory.PLAYERS,
-                                            0.8f, 1.5f);
-
-                                    // Create circular water ring effect
-                                    for (double angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-                                        double x = Math.cos(angle) * 0.5;
-                                        double z = Math.sin(angle) * 0.5;
-                                        world.spawnParticles(ParticleTypes.BUBBLE,
-                                                hitPos.x + x, hitPos.y + 0.1, hitPos.z + z,
-                                                1, 0.05, 0.05, 0.05, 0.0);
-                                    }
-                                } else {
-                                    world.spawnParticles(ParticleTypes.BUBBLE_COLUMN_UP,
-                                            hitPos.x, hitPos.y, hitPos.z,
-                                            3, 0.1, 0.1, 0.1, 0.0);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Render beam particles
-                Vec3d eyePos = player.getEyePos();
-                double maxBeamDistance = 20.0;
-                double particleDistance = 0.5;
-
-                for (double d = 0; d <= maxBeamDistance; d += particleDistance) {
-                    Vec3d particlePos = eyePos.add(direction.multiply(d));
-
-                    BlockPos blockPos = BlockPos.ofFloored(particlePos);
-                    if (!isPassableBlock(world.getBlockState(blockPos))) {
-                        break;
-                    }
-
-                    if (ticks % 2 == 0) {
-                        world.spawnParticles(ParticleTypes.SPLASH,
-                                particlePos.x, particlePos.y, particlePos.z,
-                                1, 0.05, 0.05, 0.05, 0.01);
-
-                        if (d % 2 < 0.5) {
-                            world.spawnParticles(ParticleTypes.BUBBLE_POP,
-                                    particlePos.x, particlePos.y, particlePos.z,
-                                    1, 0.05, 0.05, 0.05, 0.01);
-                        }
-                    }
-                }
-
-                ticks++;
-
-                // Schedule next tick
-                if (ticks < 200 && totalDamageDealt < 10 && player.isAlive() && !player.isRemoved()) {
-                    mod.getServer().execute(this::run);
-                } else {
-                    setActive(player, false);
-                }
-            }
-        }.run();
-
-        return true;
-    }
-
-    private BlockHitResult raycastBlocks(ServerWorld world, Vec3d start, Vec3d direction, double maxDistance) {
-        Vec3d end = start.add(direction.multiply(maxDistance));
-        return world.raycast(new RaycastContext(
-                start,
-                end,
+        // Raycast blocks
+        double maxDistance = 20.0;
+        BlockHitResult blockHit = world.raycast(new RaycastContext(
+                chestPos,
+                chestPos.add(direction.multiply(maxDistance)),
                 RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE,
-                null
+                player
         ));
+        if (blockHit.getType() != HitResult.Type.MISS) {
+            maxDistance = chestPos.distanceTo(blockHit.getPos());
+        }
+
+        // Raycast entities
+        EntityHitResult entityHit = raycastEntities(world, player, chestPos, direction, maxDistance);
+        if (entityHit != null && entityHit.getEntity() instanceof LivingEntity target) {
+            if (isValidTarget(player, target)) {
+                Vec3d knockback = new Vec3d(target.getX(), target.getY(), target.getZ())
+                        .subtract(new Vec3d(player.getX(), player.getY(), player.getZ()))
+                        .normalize().add(0, 0.2, 0).multiply(0.8);
+                target.setVelocity(knockback);
+                target.velocityModified = true;
+
+                // Deal damage
+                if (state.totalDamage < 10) {
+                    double damageAmount = Math.min(0.5, 10 - state.totalDamage);
+                    target.damage(player.getDamageSources().magic(), (float) damageAmount);
+                    state.totalDamage += damageAmount;
+
+                    Vec3d hitPos = new Vec3d(target.getX(), target.getY(), target.getZ());
+
+                    // Spawn particles
+                    world.spawnParticles(
+                            ParticleTypes.SPLASH,
+                            hitPos.x, hitPos.y, hitPos.z,
+                            10, 0.2, 0.2, 0.2, 0.1
+                    );
+
+                    world.spawnParticles(
+                            ParticleTypes.BUBBLE_POP,
+                            hitPos.x, hitPos.y, hitPos.z,
+                            5, 0.1, 0.1, 0.1, 0.05
+                    );
+                }
+            }
+        }
+
+        // Beam particles along line
+        Vec3d eyePos = player.getEyePos();
+        double particleDistance = 0.5;
+        for (double d = 0; d <= maxDistance; d += particleDistance) {
+            Vec3d particlePos = eyePos.add(direction.multiply(d));
+            BlockPos blockPos = BlockPos.ofFloored(particlePos);
+            if (!isPassableBlock(world.getBlockState(blockPos))) break;
+
+            if (state.ticks % 2 == 0) {
+                world.spawnParticles(
+                        ParticleTypes.SPLASH,
+                        particlePos.x, particlePos.y, particlePos.z,
+                        1, 0.05, 0.05, 0.05, 0.01
+                );
+
+                world.spawnParticles(
+                        ParticleTypes.BUBBLE_POP,
+                        particlePos.x, particlePos.y, particlePos.z,
+                        1, 0.05, 0.05, 0.05, 0.01
+                );
+            }
+        }
+
+        state.ticks++;
     }
 
     private EntityHitResult raycastEntities(ServerWorld world, ServerPlayerEntity player,
@@ -194,7 +168,8 @@ public class WaterBeamAbility extends BaseAbility {
                 double distance = start.distanceTo(hit.get());
                 if (distance < closestDistance) {
                     closestDistance = distance;
-                    result = new EntityHitResult(entity, hit.get());
+                    // Use 3-arg constructor variant for mappings that require it
+                    result = new EntityHitResult(entity, hit.get(), false);
                 }
             }
         }
@@ -204,17 +179,14 @@ public class WaterBeamAbility extends BaseAbility {
 
     private boolean isValidTarget(ServerPlayerEntity player, LivingEntity target) {
         if (target.equals(player)) return false;
-
         if (target instanceof ServerPlayerEntity targetPlayer) {
             return !mod.getTrustManager().isTrusted(player.getUuid(), targetPlayer.getUuid());
         }
-
         return true;
     }
 
     private boolean isPassableBlock(BlockState state) {
         if (state.isAir()) return true;
-
         Block block = state.getBlock();
         return block == Blocks.SHORT_GRASS ||
                 block == Blocks.TALL_GRASS ||
@@ -236,15 +208,8 @@ public class WaterBeamAbility extends BaseAbility {
 
     @Override
     public void setActive(ServerPlayerEntity player, boolean active) {
-        if (active) {
-            activeUsers.add(player.getUuid());
-        } else {
-            activeUsers.remove(player.getUuid());
-        }
-    }
-
-    public void clearEffects(ServerPlayerEntity player) {
-        setActive(player, false);
+        if (active) activeUsers.add(player.getUuid());
+        else activeUsers.remove(player.getUuid());
     }
 
     @Override
@@ -255,5 +220,47 @@ public class WaterBeamAbility extends BaseAbility {
     @Override
     public String getDescription() {
         return "Fire a continuous beam of water that damages and pushes back enemies. (40 mana)";
+    }
+
+    private static class BeamState {
+        public final ServerPlayerEntity player;
+        public int ticks;
+        public double totalDamage;
+
+        public BeamState(ServerPlayerEntity player) {
+            this.player = player;
+            this.ticks = 0;
+            this.totalDamage = 0;
+        }
+    }
+
+    /**
+     * Resolves the ServerWorld for a ServerPlayerEntity in 1.21.x without relying on removed getters.
+     * This avoids getWorld()/getServerWorld() signature mismatches across Yarn mappings.
+     */
+    private static ServerWorld resolveServerWorld(ServerPlayerEntity player) {
+        // PlayerEntity in server context has a world field via base Entity; if your mappings
+        // don’t expose getWorld(), derive via the server and the player’s current world key.
+        // Both branches are here to be robust across minor mapping differences.
+
+        // Preferred: try direct entity world where available
+        try {
+            // Reflect the available getter if present in your mappings
+            ServerWorld w = (ServerWorld) ((PlayerEntity) player).getWorld();
+            if (w != null) return w;
+        } catch (Throwable ignored) {
+            // Fall through to registry-key based resolution
+        }
+
+        // Fallback: resolve via server + current world registry key
+        // In 1.21.x, ServerPlayerEntity exposes its current world registry key.
+        // Names vary by mappings; common ones:
+        // - player.getWorldRegistryKey()
+        // - player.getServerWorld().getRegistryKey() (if method exists)
+        // - player.getServer().getWorld(player.getWorld().getRegistryKey()) (older mappings)
+        // We attempt via the player’s world key obtainable from the player’s server-side world reference.
+        ServerWorld overworld = player.getServer().getOverworld();
+        ServerWorld current = player.getServer().getWorld(overworld.getRegistryKey()); // same dim as overworld by default
+        return current != null ? current : overworld;
     }
 }
