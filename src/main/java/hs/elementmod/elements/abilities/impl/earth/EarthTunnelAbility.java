@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -16,9 +17,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+
 import java.util.*;
 
 public class EarthTunnelAbility extends BaseAbility {
+
     private static final Set<Block> TUNNELABLE = Set.of(
             Blocks.STONE, Blocks.DEEPSLATE, Blocks.DIRT, Blocks.GRASS_BLOCK,
             Blocks.COBBLESTONE, Blocks.ANDESITE, Blocks.DIORITE, Blocks.GRANITE,
@@ -44,7 +47,7 @@ public class EarthTunnelAbility extends BaseAbility {
         super("earth_tunnel", 50, 10, 1);
         this.mod = mod;
 
-        // Register tick handler
+        // Server tick handler
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             activeTunnels.entrySet().removeIf(entry -> {
                 TunnelState state = entry.getValue();
@@ -56,16 +59,18 @@ public class EarthTunnelAbility extends BaseAbility {
                 }
 
                 Vec3d direction = player.getRotationVec(1.0f).normalize();
-                Vec3d mineLocation = direction.getY() < -0.5 ?
-                        player.getPos().add(direction.multiply(1.0)) :
-                        player.getEyePos().add(direction.multiply(1.5));
+                Vec3d mineLocation = direction.y < -0.5 ?
+                        player.getEyePos().add(direction.multiply(1.0)) :
+                        player.getCameraPosVec(1.0f).add(direction.multiply(1.5));
 
-                breakTunnel(player.getServerWorld(), mineLocation, player);
+                ServerWorld world = (ServerWorld) player.getEntityWorld();
+                breakTunnel(world, mineLocation, player);
 
-                player.getServerWorld().spawnParticles(
-                        ParticleTypes.BLOCK,
+                world.spawnParticles(
+                        new BlockStateParticleEffect(ParticleTypes.BLOCK, Blocks.STONE.getDefaultState()),
                         mineLocation.x, mineLocation.y, mineLocation.z,
-                        10, 0.5, 0.5, 0.5, 0.1);
+                        10, 0.5, 0.5, 0.5, 0.1
+                );
 
                 state.ticks++;
                 return false;
@@ -78,17 +83,16 @@ public class EarthTunnelAbility extends BaseAbility {
         ServerPlayerEntity player = context.getPlayer();
         UUID playerId = player.getUuid();
 
-        // Check if already active - cancel if so
+        // Cancel if already active
         if (activeTunnels.containsKey(playerId)) {
             activeTunnels.remove(playerId);
-            player.sendMessage(Text.literal("Tunneling cancelled")
-                    .formatted(Formatting.YELLOW), false);
+            player.sendMessage(Text.literal("Tunneling cancelled").formatted(Formatting.YELLOW), false);
             setActive(player, false);
             return true;
         }
 
         // Start tunneling
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = (ServerWorld) player.getEntityWorld();
         world.playSound(null, player.getBlockPos(),
                 SoundEvents.BLOCK_STONE_BREAK, SoundCategory.PLAYERS,
                 1f, 0.8f);
@@ -106,7 +110,7 @@ public class EarthTunnelAbility extends BaseAbility {
         for (int x = -1; x <= 1; x++) {
             for (int y = -1; y <= 1; y++) {
                 for (int z = -1; z <= 1; z++) {
-                    BlockPos blockPos = BlockPos.ofFloored(center.add(x, y, z));
+                    BlockPos blockPos = BlockPos.ofFloored(center.x + x, center.y + y, center.z + z);
                     BlockState state = world.getBlockState(blockPos);
 
                     if (TUNNELABLE.contains(state.getBlock())) {

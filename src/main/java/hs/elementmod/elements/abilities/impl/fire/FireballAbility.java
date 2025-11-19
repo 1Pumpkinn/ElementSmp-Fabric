@@ -3,20 +3,12 @@ package hs.elementmod.elements.abilities.impl.fire;
 import hs.elementmod.ElementMod;
 import hs.elementmod.elements.abilities.BaseAbility;
 import hs.elementmod.elements.ElementContext;
-import hs.elementmod.managers.TrustManager;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.projectile.FireballEntity;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
 
 
 public class FireballAbility extends BaseAbility {
@@ -30,7 +22,7 @@ public class FireballAbility extends BaseAbility {
     @Override
     public boolean execute(ElementContext context) {
         ServerPlayerEntity player = context.getPlayer();
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getEntityWorld();
         Vec3d direction = player.getRotationVec(1.0f).normalize();
 
         // Launch fireball

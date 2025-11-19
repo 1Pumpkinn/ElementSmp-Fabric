@@ -4,8 +4,6 @@ import hs.elementmod.ElementMod;
 import hs.elementmod.data.PlayerData;
 import hs.elementmod.elements.ElementType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 

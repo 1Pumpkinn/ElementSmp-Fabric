@@ -1,15 +1,11 @@
 package hs.elementmod.listeners;
 
 import hs.elementmod.ElementMod;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.Map;
 import java.util.UUID;
@@ -101,33 +97,4 @@ public class AbilityEventListeners {
         int ticksSinceLastTap = 999;
         int ticksWaiting = 0;
     }
-}
-
-/**
- * Alternative: Custom keybinding approach (optional)
- * This creates dedicated ability keys that players can customize
- */
-class CustomKeybindAbilityListener {
-    // Client-side only - keybindings
-    private static KeyBinding ability1Key;
-    private static KeyBinding ability2Key;
-
-    public static void registerClient() {
-        ability1Key = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.elementmod.ability1",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R,
-                "category.elementmod.abilities"
-        ));
-
-        ability2Key = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.elementmod.ability2",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_F,
-                "category.elementmod.abilities"
-        ));
-    }
-
-    // Note: In Fabric, you'd need to send packets to server when keys are pressed
-    // The current right-click approach is simpler and doesn't require custom networking
 }

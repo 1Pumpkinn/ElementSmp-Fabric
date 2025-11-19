@@ -8,7 +8,7 @@
       "hs.elementmod.ElementMod"
     ],
     "client": [
-      "hs.elementmod.client.ElementsmpFabricClient"
+      "hs.elementmod.client.ElementModClient"
     ]
   },
   "depends": {

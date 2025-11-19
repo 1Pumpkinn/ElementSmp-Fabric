@@ -26,8 +26,8 @@ public class MeteorShowerAbility extends BaseAbility {
     @Override
     public boolean execute(ElementContext context) {
         ServerPlayerEntity player = context.getPlayer();
-        ServerWorld world = player.getServerWorld();
-        Vec3d targetLoc = player.getPos();
+        ServerWorld world = player.getEntityWorld();
+        Vec3d targetLoc = player.getEyePos();
 
         world.playSound(null, player.getBlockPos(),
                 SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS,

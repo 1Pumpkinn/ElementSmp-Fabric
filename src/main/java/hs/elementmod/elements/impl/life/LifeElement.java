@@ -8,11 +8,10 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Formatting;
-
-import java.util.UUID;
+import net.minecraft.util.Identifier;
 
 public class LifeElement extends BaseElement {
-    private static final UUID HEALTH_MODIFIER_ID = UUID.fromString("a7c9d8e6-1234-5678-9abc-def012345678");
+    private static final Identifier HEALTH_MODIFIER_ID = Identifier.of("elementmod", "life_health_boost");
 
     public LifeElement(ElementMod mod) {
         super(mod);
@@ -25,26 +24,29 @@ public class LifeElement extends BaseElement {
 
     @Override
     public void applyUpsides(ServerPlayerEntity player, int upgradeLevel) {
-        // Upside 1: 15 hearts (30 HP)
         var attr = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
-        if (attr != null && !attr.hasModifier(HEALTH_MODIFIER_ID)) {
-            attr.addTemporaryModifier(new EntityAttributeModifier(
-                    HEALTH_MODIFIER_ID,
-                    10.0, // +10 hearts (20 HP) to base 20 = 30 total
-                    EntityAttributeModifier.Operation.ADD_VALUE
-            ));
-            player.setHealth(player.getMaxHealth());
+        if (attr != null) {
+            if (!attr.hasModifier(HEALTH_MODIFIER_ID)) {
+                EntityAttributeModifier healthModifier = new EntityAttributeModifier(
+                        HEALTH_MODIFIER_ID,
+                        10.0,  // +10 HP
+                        EntityAttributeModifier.Operation.ADD_VALUE
+                );
+                attr.addTemporaryModifier(healthModifier);
+                player.setHealth(player.getMaxHealth());
+            }
         }
     }
 
     @Override
     protected boolean executeAbility1(ElementContext context) {
-        // TODO: Implement Life abilities
+        // TODO: Implement Regeneration Aura
         return false;
     }
 
     @Override
     protected boolean executeAbility2(ElementContext context) {
+        // TODO: Implement Healing Beam
         return false;
     }
 
