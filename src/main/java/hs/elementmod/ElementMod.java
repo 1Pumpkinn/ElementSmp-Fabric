@@ -19,6 +19,7 @@ import hs.elementmod.managers.*;
 /**
  * Main mod initializer for Element Mod (Fabric)
  * Converted from Paper plugin to Fabric mod
+ * Now with unified ability system and all elements
  */
 public class ElementMod implements ModInitializer {
     public static final String MOD_ID = "elementmod";
@@ -61,7 +62,6 @@ public class ElementMod implements ModInitializer {
     private void onServerStarting(MinecraftServer server) {
         this.server = server;
         initializeManagers();
-        registerAbilities();
         registerListeners();
     }
 
@@ -87,26 +87,42 @@ public class ElementMod implements ModInitializer {
     }
 
     private void initializeManagers() {
+        LOGGER.info("Initializing managers...");
+
         this.configManager = new ConfigManager();
         this.dataStore = new DataStore();
         this.trustManager = new TrustManager(dataStore);
         this.manaManager = new ManaManager(dataStore, configManager);
-        this.abilityManager = new AbilityManager(this); // pass the mod instance
-        this.elementRegistry = new ElementRegistry(abilityManager);
-        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager, abilityManager, this);
-        this.itemManager = new ItemManager(manaManager, configManager);
-    }
+        this.abilityManager = new AbilityManager(this);
 
-    private void registerAbilities() {
-        elementRegistry.registerAllAbilities();
+        // ElementManager now creates ElementRegistry internally
+        this.elementManager = new ElementManager(
+                dataStore, manaManager, trustManager,
+                configManager, abilityManager, this
+        );
+
+        // Get registry from manager
+        this.elementRegistry = elementManager.getElementRegistry();
+
+        this.itemManager = new ItemManager(manaManager, configManager);
+
+        LOGGER.info("Managers initialized successfully");
     }
 
     private void registerListeners() {
+        LOGGER.info("Registering listeners...");
+
+        // Register unified ability listener (replaces per-element listeners)
+        AbilityEventListeners.register();
+
+        // Register other event listeners
         PlayerEventListeners.register();
         CombatEventListeners.register();
-        AbilityEventListeners.register();
         ItemEventListeners.register();
         GameModeListener.register();
+        FallDamageListener.register();
+
+        LOGGER.info("Listeners registered successfully");
     }
 
     public static ElementMod getInstance() {

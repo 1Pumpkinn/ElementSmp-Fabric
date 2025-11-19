@@ -3,20 +3,28 @@ package hs.elementmod.elements;
 import hs.elementmod.ElementMod;
 import hs.elementmod.elements.abilities.Ability;
 import hs.elementmod.elements.abilities.AbilityManager;
+import hs.elementmod.elements.impl.air.AirElement;
+import hs.elementmod.elements.impl.water.WaterElement;
+import hs.elementmod.elements.impl.fire.FireElement;
+import hs.elementmod.elements.impl.earth.EarthElement;
+import hs.elementmod.elements.impl.life.LifeElement;
+// Import others as implemented
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
- * Registry for all elements in the mod
+ * Registry for all elements in the mod - Fabric version
+ * Now auto-registers all implemented elements
  */
 public class ElementRegistry {
+    private final ElementMod mod;
     private final AbilityManager abilityManager;
-    private final Map<ElementType, Supplier<Element>> elementSuppliers = new HashMap<>();
+    private final Map<ElementType, Element> elements = new EnumMap<>(ElementType.class);
 
-    public ElementRegistry(AbilityManager abilityManager) {
+    public ElementRegistry(AbilityManager abilityManager, ElementMod mod) {
         this.abilityManager = abilityManager;
+        this.mod = mod;
         initializeElements();
     }
 
@@ -24,26 +32,38 @@ public class ElementRegistry {
      * Initialize all element registrations
      */
     private void initializeElements() {
-        // Elements will be registered here as they are implemented
-        ElementMod.LOGGER.info("Element registry initialized");
+        // Register all implemented elements
+        registerElement(ElementType.AIR, new AirElement(mod));
+        registerElement(ElementType.WATER, new WaterElement(mod));
+        registerElement(ElementType.FIRE, new FireElement(mod));
+        registerElement(ElementType.EARTH, new EarthElement(mod));
+        registerElement(ElementType.LIFE, new LifeElement(mod));
+
+        // TODO: Add these as they are implemented:
+        // registerElement(ElementType.DEATH, new DeathElement(mod));
+        // registerElement(ElementType.METAL, new MetalElement(mod));
+        // registerElement(ElementType.FROST, new FrostElement(mod));
+
+        ElementMod.LOGGER.info("Element registry initialized with {} elements", elements.size());
     }
 
     /**
      * Register an element
      *
      * @param type The element type
-     * @param supplier The supplier that creates the element
+     * @param element The element instance
      */
-    public void registerElement(ElementType type, Supplier<Element> supplier) {
-        elementSuppliers.put(type, supplier);
-        ElementMod.LOGGER.info("Registered element: " + type.name());
+    public void registerElement(ElementType type, Element element) {
+        elements.put(type, element);
+        ElementMod.LOGGER.info("Registered element: {}", type.name());
     }
 
     /**
      * Register all abilities for all elements
      */
     public void registerAllAbilities() {
-        // Abilities will be registered here as they are implemented
+        // Abilities are now registered via the element classes themselves
+        // This method can be used for any additional setup if needed
         ElementMod.LOGGER.info("All abilities registered");
     }
 
@@ -59,15 +79,13 @@ public class ElementRegistry {
     }
 
     /**
-     * Create an element
+     * Get an element by type
      *
      * @param type The element type
-     * @return The created element, or null if the type is not registered
+     * @return The element, or null if not registered
      */
-    public Element createElement(ElementType type) {
-        Supplier<Element> supplier = elementSuppliers.get(type);
-        if (supplier == null) return null;
-        return supplier.get();
+    public Element getElement(ElementType type) {
+        return elements.get(type);
     }
 
     /**
@@ -77,7 +95,7 @@ public class ElementRegistry {
      * @return true if the element type is registered, false otherwise
      */
     public boolean isRegistered(ElementType type) {
-        return elementSuppliers.containsKey(type);
+        return elements.containsKey(type);
     }
 
     /**

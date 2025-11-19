@@ -6,8 +6,6 @@ import hs.elementmod.data.DataStore;
 import hs.elementmod.data.PlayerData;
 import hs.elementmod.elements.*;
 import hs.elementmod.elements.abilities.AbilityManager;
-import hs.elementmod.elements.impl.air.AirElement;
-import hs.elementmod.elements.impl.water.WaterElement;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -15,8 +13,8 @@ import net.minecraft.util.Formatting;
 import java.util.*;
 
 /**
- * Manages all elements in the mod
- * Converted from Paper to Fabric 1.21.1
+ * Manages all elements in the mod - Updated for Fabric 1.21.1
+ * Now uses ElementRegistry for cleaner element management
  */
 public class ElementManager {
     private final DataStore store;
@@ -25,7 +23,7 @@ public class ElementManager {
     private final ConfigManager configManager;
     private final AbilityManager abilityManager;
     private final ElementMod mod;
-    private final Map<ElementType, Element> registry = new EnumMap<>(ElementType.class);
+    private final ElementRegistry elementRegistry;
     private final Set<UUID> currentlyRolling = new HashSet<>();
     private final Random random = new Random();
 
@@ -37,23 +35,11 @@ public class ElementManager {
         this.configManager = configManager;
         this.abilityManager = abilityManager;
         this.mod = mod;
-        registerAllElements();
-    }
 
-    private void registerAllElements() {
-        // Register implemented elements
-        registry.put(ElementType.AIR, new AirElement(mod));
-        registry.put(ElementType.WATER, new WaterElement(mod));
+        // Create and initialize element registry
+        this.elementRegistry = new ElementRegistry(abilityManager, mod);
 
-        // TODO: Register other elements as they are implemented
-        // registry.put(ElementType.FIRE, new FireElement(mod));
-        // registry.put(ElementType.EARTH, new EarthElement(mod));
-        // registry.put(ElementType.LIFE, new LifeElement(mod));
-        // registry.put(ElementType.DEATH, new DeathElement(mod));
-        // registry.put(ElementType.METAL, new MetalElement(mod));
-        // registry.put(ElementType.FROST, new FrostElement(mod));
-
-        ElementMod.LOGGER.info("Registered all elements");
+        ElementMod.LOGGER.info("ElementManager initialized with registry");
     }
 
     public PlayerData data(UUID uuid) {
@@ -61,7 +47,7 @@ public class ElementManager {
     }
 
     public Element get(ElementType type) {
-        return registry.get(type);
+        return elementRegistry.getElement(type);
     }
 
     public ElementType getPlayerElement(ServerPlayerEntity player) {
@@ -94,7 +80,7 @@ public class ElementManager {
 
         if (type == null) return;
 
-        Element element = registry.get(type);
+        Element element = elementRegistry.getElement(type);
         if (element != null) {
             element.applyUpsides(player, pd.getUpgradeLevel(type));
         }
@@ -103,7 +89,7 @@ public class ElementManager {
     private void clearOldElementEffects(ServerPlayerEntity player, ElementType oldElement) {
         if (oldElement == null) return;
 
-        Element element = registry.get(oldElement);
+        Element element = elementRegistry.getElement(oldElement);
         if (element != null) {
             element.clearEffects(player);
         }
@@ -120,9 +106,19 @@ public class ElementManager {
     private boolean useAbility(ServerPlayerEntity player, int number) {
         PlayerData pd = data(player.getUuid());
         ElementType type = pd.getCurrentElement();
-        Element element = registry.get(type);
 
-        if (element == null) return false;
+        if (type == null) {
+            player.sendMessage(Text.literal("You don't have an element!")
+                    .formatted(Formatting.RED), false);
+            return false;
+        }
+
+        Element element = elementRegistry.getElement(type);
+        if (element == null) {
+            player.sendMessage(Text.literal("Element not implemented yet!")
+                    .formatted(Formatting.RED), false);
+            return false;
+        }
 
         ElementContext ctx = ElementContext.builder()
                 .player(player)
@@ -143,5 +139,9 @@ public class ElementManager {
 
     public void cancelRolling(ServerPlayerEntity player) {
         currentlyRolling.remove(player.getUuid());
+    }
+
+    public ElementRegistry getElementRegistry() {
+        return elementRegistry;
     }
 }
