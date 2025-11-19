@@ -1,13 +1,5 @@
 package hs.elementmod;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import hs.elementmod.commands.*;
 import hs.elementmod.config.ConfigManager;
 import hs.elementmod.data.DataStore;
@@ -15,6 +7,14 @@ import hs.elementmod.elements.ElementRegistry;
 import hs.elementmod.elements.abilities.AbilityManager;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
+import hs.elementmod.network.NetworkHandler;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.MinecraftServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main mod initializer for Element Mod (Fabric)
@@ -40,6 +40,9 @@ public class ElementMod implements ModInitializer {
     public void onInitialize() {
         instance = this;
         LOGGER.info("Initializing Element Mod (Fabric)...");
+
+        // Register network packets FIRST (before server starts)
+        NetworkHandler.registerPackets();
 
         // Register lifecycle events
         ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
@@ -112,8 +115,8 @@ public class ElementMod implements ModInitializer {
     private void registerListeners() {
         LOGGER.info("Registering listeners...");
 
-        // Register unified ability listener (replaces per-element listeners)
-        AbilityEventListeners.register();
+        // NOTE: Ability activation is now handled via keybinds + network packets
+        // No need for AbilityEventListeners anymore
 
         // Register other event listeners
         PlayerEventListeners.register();

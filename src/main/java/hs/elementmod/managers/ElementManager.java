@@ -4,17 +4,23 @@ import hs.elementmod.ElementMod;
 import hs.elementmod.config.ConfigManager;
 import hs.elementmod.data.DataStore;
 import hs.elementmod.data.PlayerData;
-import hs.elementmod.elements.*;
+import hs.elementmod.elements.Element;
+import hs.elementmod.elements.ElementContext;
+import hs.elementmod.elements.ElementRegistry;
+import hs.elementmod.elements.ElementType;
 import hs.elementmod.elements.abilities.AbilityManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 /**
- * Manages all elements in the mod - Updated for Fabric 1.21.1
- * Now uses ElementRegistry for cleaner element management
+ * Manages all elements in the mod - Fabric 1.21.10 compatible
  */
 public class ElementManager {
     private final DataStore store;
@@ -36,26 +42,29 @@ public class ElementManager {
         this.abilityManager = abilityManager;
         this.mod = mod;
 
-        // Create and initialize element registry
         this.elementRegistry = new ElementRegistry(abilityManager, mod);
 
         ElementMod.LOGGER.info("ElementManager initialized with registry");
     }
 
+    // Access player data
     public PlayerData data(UUID uuid) {
         return store.getPlayerData(uuid);
     }
 
-    public Element get(ElementType type) {
-        return elementRegistry.getElement(type);
-    }
-
+    // Get the ElementType of a player
     public ElementType getPlayerElement(ServerPlayerEntity player) {
         return Optional.ofNullable(data(player.getUuid()))
                 .map(PlayerData::getElementType)
                 .orElse(null);
     }
 
+    // Get Element object by type
+    public Element get(ElementType type) {
+        return elementRegistry.getElement(type);
+    }
+
+    // Set a player's element
     public void setElement(ServerPlayerEntity player, ElementType type) {
         PlayerData pd = data(player.getUuid());
         ElementType old = pd.getCurrentElement();
@@ -74,6 +83,7 @@ public class ElementManager {
         applyUpsides(player);
     }
 
+    // Apply upsides for the current element
     public void applyUpsides(ServerPlayerEntity player) {
         PlayerData pd = data(player.getUuid());
         ElementType type = pd.getCurrentElement();
@@ -95,30 +105,17 @@ public class ElementManager {
         }
     }
 
-    public boolean useAbility1(ServerPlayerEntity player) {
-        return useAbility(player, 1);
-    }
-
-    public boolean useAbility2(ServerPlayerEntity player) {
-        return useAbility(player, 2);
-    }
+    // Use abilities
+    public boolean useAbility1(ServerPlayerEntity player) { return useAbility(player, 1); }
+    public boolean useAbility2(ServerPlayerEntity player) { return useAbility(player, 2); }
 
     private boolean useAbility(ServerPlayerEntity player, int number) {
         PlayerData pd = data(player.getUuid());
-        ElementType type = pd.getCurrentElement();
-
-        if (type == null) {
-            player.sendMessage(Text.literal("You don't have an element!")
-                    .formatted(Formatting.RED), false);
-            return false;
-        }
+        ElementType type = getPlayerElement(player);
+        if (type == null) return false;
 
         Element element = elementRegistry.getElement(type);
-        if (element == null) {
-            player.sendMessage(Text.literal("Element not implemented yet!")
-                    .formatted(Formatting.RED), false);
-            return false;
-        }
+        if (element == null) return false;
 
         ElementContext ctx = ElementContext.builder()
                 .player(player)
