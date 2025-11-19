@@ -2,100 +2,93 @@ package hs.elementmod.listeners;
 
 import hs.elementmod.ElementMod;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AbilityEventListeners {
-    private static final long DOUBLE_TAP_THRESHOLD_MS = 250;
-    private static final java.util.Map<java.util.UUID, TapTracker> tapTrackers =
-            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final int DOUBLE_TAP_TICKS = 5;   // 5 ticks = 250 ms
+    private static final int CHECK_DELAY_TICKS = 6;  // slightly after double-tap window
+
+    private static final Map<UUID, TapTracker> tapTrackers = new ConcurrentHashMap<>();
 
     public static void register() {
+
+        // Handle item right-click (main-hand only)
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (world.isClient || hand != Hand.MAIN_HAND) {
-                return TypedActionResult.pass(player.getStackInHand(hand));
+
+            if (world.isClient() || hand != Hand.MAIN_HAND) {
+                return ActionResult.PASS;
             }
 
             if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-                return TypedActionResult.pass(player.getStackInHand(hand));
+                return ActionResult.PASS;
             }
 
-            // Check for swap hands keybind (F)
-            // This is simplified - you'll need proper keybind detection
             handleAbilityActivation(serverPlayer);
 
-            return TypedActionResult.pass(player.getStackInHand(hand));
+            return ActionResult.PASS;
+        });
+
+        // Tick handler for ability checks
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (UUID id : tapTrackers.keySet()) {
+                TapTracker tracker = tapTrackers.get(id);
+                if (tracker == null) continue;
+
+                tracker.ticksWaiting++;
+
+                // Once enough ticks pass and no second tap happened → trigger ability
+                if (!tracker.doubleTapped && tracker.ticksWaiting >= CHECK_DELAY_TICKS) {
+                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+                    if (player != null) {
+                        boolean success = tracker.shiftHeld ?
+                                ElementMod.getInstance().getElementManager().useAbility2(player) :
+                                ElementMod.getInstance().getElementManager().useAbility1(player);
+
+                        if (success) {
+                            tapTrackers.remove(id);
+                        }
+                    }
+                }
+
+                // Remove if idle for too long
+                if (tracker.ticksWaiting > 40) {
+                    tapTrackers.remove(id);
+                }
+            }
         });
     }
 
     private static void handleAbilityActivation(ServerPlayerEntity player) {
-        java.util.UUID playerId = player.getUuid();
-        TapTracker tracker = tapTrackers.computeIfAbsent(playerId, k -> new TapTracker());
+        UUID id = player.getUuid();
+        TapTracker tracker = tapTrackers.computeIfAbsent(id, x -> new TapTracker());
 
-        long currentTime = System.currentTimeMillis();
-
-        if (tracker.isDoubleTap(currentTime)) {
-            tracker.reset();
-            tapTrackers.remove(playerId);
-            return; // Double tap - allow normal swap
+        // Double tap check
+        if (tracker.ticksSinceLastTap <= DOUBLE_TAP_TICKS) {
+            tracker.doubleTapped = true;
+            tapTrackers.remove(id);
+            return; // allow normal item action
         }
 
-        tracker.recordTap(currentTime, player.isSneaking());
-
-        // Schedule ability activation check
-        scheduleAbilityCheck(player, playerId, currentTime);
-    }
-
-    private static void scheduleAbilityCheck(ServerPlayerEntity player,
-                                             java.util.UUID playerId,
-                                             long tapTime) {
-        player.getServer().execute(() -> {
-            try {
-                Thread.sleep(300); // CHECK_DELAY_TICKS * 50ms
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-
-            TapTracker tracker = tapTrackers.get(playerId);
-            if (tracker == null || !tracker.isValidTap(tapTime)) {
-                return; // Second tap occurred
-            }
-
-            // Execute ability
-            boolean success = tracker.wasShiftHeld ?
-                    ElementMod.getInstance().getElementManager().useAbility2(player) :
-                    ElementMod.getInstance().getElementManager().useAbility1(player);
-
-            if (success) {
-                tapTrackers.remove(playerId);
-            }
-        });
+        // First tap
+        tracker.shiftHeld = player.isSneaking();
+        tracker.ticksSinceLastTap = 0;
+        tracker.doubleTapped = false;
+        tracker.ticksWaiting = 0;
     }
 
     private static class TapTracker {
-        private long lastTapTime = 0;
-        private boolean wasShiftHeld = false;
+        boolean shiftHeld = false;
+        boolean doubleTapped = false;
 
-        boolean isDoubleTap(long currentTime) {
-            return lastTapTime > 0 &&
-                    (currentTime - lastTapTime) <= DOUBLE_TAP_THRESHOLD_MS;
-        }
-
-        void recordTap(long time, boolean shiftHeld) {
-            this.lastTapTime = time;
-            this.wasShiftHeld = shiftHeld;
-        }
-
-        boolean isValidTap(long originalTime) {
-            return lastTapTime == originalTime;
-        }
-
-        void reset() {
-            lastTapTime = 0;
-            wasShiftHeld = false;
-        }
+        int ticksSinceLastTap = 999;
+        int ticksWaiting = 0;
     }
 }

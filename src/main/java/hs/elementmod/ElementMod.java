@@ -36,11 +36,13 @@ public class ElementMod implements ModInitializer {
         instance = this;
         LOGGER.info("Initializing Element Mod...");
 
+        // Register lifecycle events
         ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
+        // Register commands
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ElementCommand.register(dispatcher);
             ManaCommand.register(dispatcher);
@@ -60,16 +62,24 @@ public class ElementMod implements ModInitializer {
     }
 
     private void onServerStarted(MinecraftServer server) {
-        if (manaManager != null) manaManager.start();
+        if (manaManager != null) {
+            manaManager.start();
+        }
     }
 
     private void onServerStopping(MinecraftServer server) {
-        if (dataStore != null) dataStore.flushAll();
-        if (manaManager != null) manaManager.stop();
+        if (dataStore != null) {
+            dataStore.flushAll();
+        }
+        if (manaManager != null) {
+            manaManager.stop();
+        }
     }
 
     private void onServerTick(MinecraftServer server) {
-        if (manaManager != null) manaManager.tick(server);
+        if (manaManager != null) {
+            manaManager.tick(server);
+        }
     }
 
     private void initializeManagers() {
@@ -94,14 +104,43 @@ public class ElementMod implements ModInitializer {
         ItemEventListeners.register();
     }
 
-    public static ElementMod getInstance() { return instance; }
-    public MinecraftServer getServer() { return server; }
-    public DataStore getDataStore() { return dataStore; }
-    public ConfigManager getConfigManager() { return configManager; }
-    public ElementManager getElementManager() { return elementManager; }
-    public ManaManager getManaManager() { return manaManager; }
-    public TrustManager getTrustManager() { return trustManager; }
-    public ItemManager getItemManager() { return itemManager; }
-    public AbilityManager getAbilityManager() { return abilityManager; }
-    public ElementRegistry getElementRegistry() { return elementRegistry; }
+    public static ElementMod getInstance() {
+        return instance;
+    }
+
+    public MinecraftServer getServer() {
+        return server;
+    }
+
+    public DataStore getDataStore() {
+        return dataStore;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public ElementManager getElementManager() {
+        return elementManager;
+    }
+
+    public ManaManager getManaManager() {
+        return manaManager;
+    }
+
+    public TrustManager getTrustManager() {
+        return trustManager;
+    }
+
+    public ItemManager getItemManager() {
+        return itemManager;
+    }
+
+    public AbilityManager getAbilityManager() {
+        return abilityManager;
+    }
+
+    public ElementRegistry getElementRegistry() {
+        return elementRegistry;
+    }
 }

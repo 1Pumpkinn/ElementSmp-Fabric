@@ -15,6 +15,7 @@ import net.minecraft.util.Formatting;
 import java.util.List;
 
 public class TrustCommand {
+
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("trust")
                 .then(CommandManager.literal("list")
@@ -72,17 +73,18 @@ public class TrustCommand {
             TrustManager trustManager = ElementMod.getInstance().getTrustManager();
             trustManager.addPending(target.getUuid(), player.getUuid());
 
+            // Fixed ClickEvent: use the RunCommand record
             Text acceptButton = Text.literal("[ACCEPT]")
                     .formatted(Formatting.GREEN)
                     .styled(style -> style.withClickEvent(
-                            new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                    "/trust accept " + player.getName().getString())));
+                            new ClickEvent.RunCommand("/trust accept " + player.getName().getString())
+                    ));
 
             Text denyButton = Text.literal("[DENY]")
                     .formatted(Formatting.RED)
                     .styled(style -> style.withClickEvent(
-                            new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                    "/trust deny " + player.getName().getString())));
+                            new ClickEvent.RunCommand("/trust deny " + player.getName().getString())
+                    ));
 
             target.sendMessage(Text.literal(player.getName().getString() + " wants to trust with you. ")
                     .formatted(Formatting.GOLD)
