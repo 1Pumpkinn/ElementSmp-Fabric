@@ -10,6 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Data storage using JSON files (Fabric-compatible)
+ * Replaces Paper's YAML-based storage
+ */
 public class DataStore {
     private final Path dataDir;
     private final Path playerFile;

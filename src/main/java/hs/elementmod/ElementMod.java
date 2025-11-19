@@ -16,6 +16,10 @@ import hs.elementmod.elements.abilities.AbilityManager;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
 
+/**
+ * Main mod initializer for Element Mod (Fabric)
+ * Converted from Paper plugin to Fabric mod
+ */
 public class ElementMod implements ModInitializer {
     public static final String MOD_ID = "elementmod";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -34,7 +38,7 @@ public class ElementMod implements ModInitializer {
     @Override
     public void onInitialize() {
         instance = this;
-        LOGGER.info("Initializing Element Mod...");
+        LOGGER.info("Initializing Element Mod (Fabric)...");
 
         // Register lifecycle events
         ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
@@ -102,6 +106,7 @@ public class ElementMod implements ModInitializer {
         CombatEventListeners.register();
         AbilityEventListeners.register();
         ItemEventListeners.register();
+        GameModeListener.register();
     }
 
     public static ElementMod getInstance() {
