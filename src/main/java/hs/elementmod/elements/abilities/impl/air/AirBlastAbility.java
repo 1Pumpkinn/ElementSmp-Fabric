@@ -13,13 +13,58 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class AirBlastAbility extends BaseAbility {
     private final ElementMod mod;
 
+    // Track active blasts: player UUID → tick count
+    private final Map<UUID, Integer> activeBlasts = new HashMap<>();
+    private final Map<UUID, Vec3d> blastCenters = new HashMap<>();
+    private final Map<UUID, ServerWorld> blastWorlds = new HashMap<>();
+
     public AirBlastAbility(ElementMod mod) {
         super("air_blast", 50, 8, 1);
         this.mod = mod;
+
+        // Register server tick listener for particle animation
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            activeBlasts.keySet().removeIf(uuid -> {
+                int tick = activeBlasts.get(uuid);
+                ServerWorld world = blastWorlds.get(uuid);
+                Vec3d center = blastCenters.get(uuid);
+
+                if (world == null || center == null) return true;
+
+                double currentRadius = 1.5 + (tick * 0.8);
+                if (currentRadius > 8.0) return true;
+
+                for (int i = 0; i < 360; i += 10) {
+                    double rad = Math.toRadians(i);
+                    double x = Math.cos(rad) * currentRadius;
+                    double z = Math.sin(rad) * currentRadius;
+
+                    int count = Math.max(1, 3 - tick / 2);
+                    world.spawnParticles(ParticleTypes.CLOUD,
+                            center.x + x, center.y + 0.2, center.z + z,
+                            count, 0.0, 0.0, 0.0, 0.0);
+                }
+
+                tick++;
+                if (tick >= 10) {
+                    blastCenters.remove(uuid);
+                    blastWorlds.remove(uuid);
+                    return true;
+                } else {
+                    activeBlasts.put(uuid, tick);
+                    return false;
+                }
+            });
+        });
     }
 
     @Override
@@ -35,10 +80,10 @@ public class AirBlastAbility extends BaseAbility {
         }
 
         double radius = 6.0;
-        ServerWorld world = (ServerWorld) player.getWorld();
-        Vec3d center = player.getPos();
+        ServerWorld world = player.getEntityWorld();
+        Vec3d center = new Vec3d(player.getX(), player.getY(), player.getZ());
 
-        // Particle ring
+        // Spawn initial particle ring
         for (int i = 0; i < 360; i += 10) {
             double rad = Math.toRadians(i);
             double x = Math.cos(rad) * 1.5;
@@ -48,35 +93,11 @@ public class AirBlastAbility extends BaseAbility {
                     2, 0.0, 0.0, 0.0, 0.0);
         }
 
-        // Animated particle ring that shoots outward
-        mod.getServer().execute(() -> {
-            new Object() {
-                int tick = 0;
-
-                void run() {
-                    if (tick >= 10) return;
-
-                    double currentRadius = 1.5 + (tick * 0.8);
-                    if (currentRadius > 8.0) return;
-
-                    for (int i = 0; i < 360; i += 10) {
-                        double rad = Math.toRadians(i);
-                        double x = Math.cos(rad) * currentRadius;
-                        double z = Math.sin(rad) * currentRadius;
-
-                        int count = Math.max(1, 3 - tick/2);
-                        world.spawnParticles(ParticleTypes.CLOUD,
-                                center.x + x, center.y + 0.2, center.z + z,
-                                count, 0.0, 0.0, 0.0, 0.0);
-                    }
-
-                    tick++;
-                    if (tick < 10) {
-                        mod.getServer().execute(this::run);
-                    }
-                }
-            }.run();
-        });
+        // Register this blast for tick-based animation
+        UUID uuid = player.getUuid();
+        activeBlasts.put(uuid, 0);
+        blastCenters.put(uuid, center);
+        blastWorlds.put(uuid, world);
 
         // Launch nearby entities
         world.getEntitiesByClass(LivingEntity.class,
@@ -87,12 +108,17 @@ public class AirBlastAbility extends BaseAbility {
                         if (trust.isTrusted(player.getUuid(), other.getUuid())) return;
                     }
 
-                    Vec3d push = entity.getPos().subtract(center).normalize()
-                            .multiply(2.25).add(0, 1.5, 0);
+                    Vec3d push = new Vec3d(entity.getX(), entity.getY(), entity.getZ())
+                            .subtract(center)
+                            .normalize()
+                            .multiply(2.25)
+                            .add(0, 1.5, 0);
+
                     entity.setVelocity(push);
                     entity.velocityModified = true;
                 });
 
+        // Play sound effect
         world.playSound(null, player.getBlockPos(),
                 SoundEvents.ENTITY_ENDER_DRAGON_FLAP, SoundCategory.PLAYERS,
                 1f, 1.5f);

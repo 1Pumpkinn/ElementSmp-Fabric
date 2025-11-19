@@ -4,7 +4,6 @@ import hs.elementmod.ElementMod;
 import hs.elementmod.elements.abilities.Ability;
 import hs.elementmod.elements.abilities.AbilityManager;
 
-import javax.swing.text.Element;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -14,7 +13,7 @@ import java.util.function.Supplier;
  */
 public class ElementRegistry {
     private final AbilityManager abilityManager;
-    private final Map<ElementType, Supplier<hs.elementmod.elements.Element>> elementSuppliers = new HashMap<>();
+    private final Map<ElementType, Supplier<Element>> elementSuppliers = new HashMap<>();
 
     public ElementRegistry(AbilityManager abilityManager) {
         this.abilityManager = abilityManager;
@@ -67,9 +66,7 @@ public class ElementRegistry {
      */
     public Element createElement(ElementType type) {
         Supplier<Element> supplier = elementSuppliers.get(type);
-        if (supplier == null) {
-            return null;
-        }
+        if (supplier == null) return null;
         return supplier.get();
     }
 

@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "name": "Element Mod",
   "entrypoints": {
-    "main": ["hs.elementmod.ElementMod"],
-    "client": ["hs.elementmod.client.ElementsmpFabricClient"]
+    "main": [
+      "hs.elementmod.ElementMod"
+    ],
+    "client": [
+      "hs.elementmod.client.ElementsmpFabricClient"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.15.0",

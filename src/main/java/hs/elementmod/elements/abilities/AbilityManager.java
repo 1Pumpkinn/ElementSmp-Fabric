@@ -12,6 +12,7 @@ import java.util.Map;
 
 /**
  * Manages all abilities in the mod
+ * Converted from Paper to Fabric 1.21.1
  */
 public class AbilityManager {
     private final ElementMod mod;

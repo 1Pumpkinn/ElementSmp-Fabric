@@ -93,10 +93,10 @@ public class ElementMod implements ModInitializer {
         this.manaManager = new ManaManager(dataStore, configManager);
         this.abilityManager = new AbilityManager(this); // pass the mod instance
         this.elementRegistry = new ElementRegistry(abilityManager);
-        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager, abilityManager);
+        this.elementManager = new ElementManager(dataStore, manaManager, trustManager, configManager, abilityManager, this);
         this.itemManager = new ItemManager(manaManager, configManager);
     }
-    
+
     private void registerAbilities() {
         elementRegistry.registerAllAbilities();
     }
