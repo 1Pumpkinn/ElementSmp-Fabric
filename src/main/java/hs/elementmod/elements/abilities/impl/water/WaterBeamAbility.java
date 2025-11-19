@@ -8,7 +8,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -47,7 +46,10 @@ public class WaterBeamAbility extends BaseAbility {
     @Override
     public boolean execute(ElementContext context) {
         ServerPlayerEntity player = context.getPlayer();
-        ServerWorld world = resolveServerWorld(player);
+
+        if (!(player.getEntityWorld() instanceof ServerWorld world)) {
+            return false; // Only run on server
+        }
 
         // Play sound
         world.playSound(
@@ -68,7 +70,8 @@ public class WaterBeamAbility extends BaseAbility {
 
     private void updateBeam(BeamState state) {
         ServerPlayerEntity player = state.player;
-        ServerWorld world = resolveServerWorld(player);
+
+        if (!(player.getEntityWorld() instanceof ServerWorld world)) return;
 
         if (!player.isAlive() || player.isRemoved() || state.ticks >= 200 || state.totalDamage >= 10) {
             activeBeams.remove(player.getUuid());
@@ -105,7 +108,7 @@ public class WaterBeamAbility extends BaseAbility {
                 // Deal damage
                 if (state.totalDamage < 10) {
                     double damageAmount = Math.min(0.5, 10 - state.totalDamage);
-                    target.damage(player.getDamageSources().magic(), (float) damageAmount);
+                    target.damage(world, player.getDamageSources().magic(), (float) damageAmount);
                     state.totalDamage += damageAmount;
 
                     Vec3d hitPos = new Vec3d(target.getX(), target.getY(), target.getZ());
@@ -116,7 +119,6 @@ public class WaterBeamAbility extends BaseAbility {
                             hitPos.x, hitPos.y, hitPos.z,
                             10, 0.2, 0.2, 0.2, 0.1
                     );
-
                     world.spawnParticles(
                             ParticleTypes.BUBBLE_POP,
                             hitPos.x, hitPos.y, hitPos.z,
@@ -168,8 +170,7 @@ public class WaterBeamAbility extends BaseAbility {
                 double distance = start.distanceTo(hit.get());
                 if (distance < closestDistance) {
                     closestDistance = distance;
-                    // Use 3-arg constructor variant for mappings that require it
-                    result = new EntityHitResult(entity, hit.get(), false);
+                    result = new EntityHitResult(entity, hit.get());
                 }
             }
         }
@@ -232,35 +233,5 @@ public class WaterBeamAbility extends BaseAbility {
             this.ticks = 0;
             this.totalDamage = 0;
         }
-    }
-
-    /**
-     * Resolves the ServerWorld for a ServerPlayerEntity in 1.21.x without relying on removed getters.
-     * This avoids getWorld()/getServerWorld() signature mismatches across Yarn mappings.
-     */
-    private static ServerWorld resolveServerWorld(ServerPlayerEntity player) {
-        // PlayerEntity in server context has a world field via base Entity; if your mappings
-        // don’t expose getWorld(), derive via the server and the player’s current world key.
-        // Both branches are here to be robust across minor mapping differences.
-
-        // Preferred: try direct entity world where available
-        try {
-            // Reflect the available getter if present in your mappings
-            ServerWorld w = (ServerWorld) ((PlayerEntity) player).getWorld();
-            if (w != null) return w;
-        } catch (Throwable ignored) {
-            // Fall through to registry-key based resolution
-        }
-
-        // Fallback: resolve via server + current world registry key
-        // In 1.21.x, ServerPlayerEntity exposes its current world registry key.
-        // Names vary by mappings; common ones:
-        // - player.getWorldRegistryKey()
-        // - player.getServerWorld().getRegistryKey() (if method exists)
-        // - player.getServer().getWorld(player.getWorld().getRegistryKey()) (older mappings)
-        // We attempt via the player’s world key obtainable from the player’s server-side world reference.
-        ServerWorld overworld = player.getServer().getOverworld();
-        ServerWorld current = player.getServer().getWorld(overworld.getRegistryKey()); // same dim as overworld by default
-        return current != null ? current : overworld;
     }
 }
