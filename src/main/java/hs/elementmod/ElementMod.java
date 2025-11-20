@@ -47,6 +47,8 @@ public class ElementMod implements ModInitializer {
         LOGGER.info("Registering items...");
         ModItems.initialize();
 
+
+
         // Step 2: Register network packets
         LOGGER.info("Registering network packets...");
         NetworkHandler.registerPackets();
