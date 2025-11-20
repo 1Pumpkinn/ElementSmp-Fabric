@@ -4,6 +4,7 @@ import hs.elementmod.ElementMod;
 import hs.elementmod.config.ConfigManager;
 import hs.elementmod.elements.ElementType;
 import hs.elementmod.items.*;
+import hs.elementmod.items.custom.*;
 import hs.elementmod.util.ItemUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;

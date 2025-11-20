@@ -2,6 +2,10 @@ package hs.elementmod.recipes;
 
 import hs.elementmod.ElementMod;
 import hs.elementmod.items.*;
+import hs.elementmod.items.custom.AdvancedRerollerItem;
+import hs.elementmod.items.custom.RerollerItem;
+import hs.elementmod.items.custom.Upgrader1Item;
+import hs.elementmod.items.custom.Upgrader2Item;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RawShapedRecipe;

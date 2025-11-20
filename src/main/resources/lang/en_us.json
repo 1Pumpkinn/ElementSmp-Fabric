@@ -1,7 +1,7 @@
 {
-  "item.elementmod.upgrader_1": "Upgrader I",
-  "item.elementmod.upgrader_2": "Upgrader II",
-  "item.elementmod.element_reroller": "Reroller",
+  "item.elementmod.upgrader_i": "Upgrader I",
+  "item.elementmod.upgrader_ii": "Upgrader II",
+  "item.elementmod.element_reroller": "Element Reroller",
   "item.elementmod.advanced_reroller": "Advanced Reroller",
   "item.elementmod.life_core": "Life Core",
   "item.elementmod.death_core": "Death Core",

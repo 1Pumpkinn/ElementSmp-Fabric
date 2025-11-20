@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "elementmod:item/reroller"
+    "layer0": "elementmod:item/element_reroller"
   }
 }

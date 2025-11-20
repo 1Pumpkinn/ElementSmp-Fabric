@@ -5,7 +5,6 @@ import hs.elementmod.config.ConfigManager;
 import hs.elementmod.data.DataStore;
 import hs.elementmod.elements.ElementRegistry;
 import hs.elementmod.elements.abilities.AbilityManager;
-import hs.elementmod.items.ModItems;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
 import hs.elementmod.network.NetworkHandler;
@@ -14,7 +13,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.registry.Registry;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +42,9 @@ public class ElementMod implements ModInitializer {
         instance = this;
         LOGGER.info("Initializing Element Mod (Fabric 1.21.10)...");
 
-        // Step 1: Register items FIRST (before anything else uses them)
-        LOGGER.info("Registering items...");
-        ModItems.registerModItems();
+    // Step 1: Register items FIRST (before anything else uses them)
+    LOGGER.info("Registering items...");
+    hs.elementmod.items.ModItems.registerModItems();
 
 
 
