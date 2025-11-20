@@ -1,33 +1,37 @@
 package hs.elementmod.items;
 
 import hs.elementmod.ElementMod;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
+import java.util.function.Function;
+
 public class ModItems {
 
-    // Item instances
-    public static Item UPGRADER_1;
-    public static Item UPGRADER_2;
-    public static Item REROLLER;
-    public static Item ADVANCED_REROLLER;
-    public static Item LIFE_CORE;
-    public static Item DEATH_CORE;
+    // Simple item with max stack size 1
+    public static final Item UPGRADER_I = registerItem(
+            "upgrader_i",
+            Item::new,
+            new Item.Settings().maxCount(1)
+    );
 
-    // Call this during mod initialization
-    public static void registerModItems() {
-        UPGRADER_1 = registerItem("upgrader_1", new Item.Settings().maxCount(16));
-        UPGRADER_2 = registerItem("upgrader_2", new Item.Settings().maxCount(16));
-        REROLLER = registerItem("reroller", new Item.Settings().maxCount(1));
-        ADVANCED_REROLLER = registerItem("advanced_reroller", new Item.Settings().maxCount(1));
-        LIFE_CORE = registerItem("life_core", new Item.Settings().maxCount(64));
-        DEATH_CORE = registerItem("death_core", new Item.Settings().maxCount(64));
+    public static <I extends Item> I registerItem(String name, Function<Item.Settings, I> factory, Item.Settings settings) {
+        I item = factory.apply(settings); // pass settings directly
+
+        if (item instanceof BlockItem blockItem) {
+            blockItem.appendBlocks(Item.BLOCK_ITEMS, blockItem);
+        }
+
+        return Registry.register(Registries.ITEM, Identifier.of(ElementMod.MOD_ID, name), item);
     }
 
-    private static Item registerItem(String name, Item.Settings settings) {
-        Identifier id = Identifier.of(ElementMod.MOD_ID, name);
-        return Registry.register(Registries.ITEM, id, new Item(settings));
+
+    public static void registerModItems() {
+        ElementMod.LOGGER.info("Registering Mod Items for " + ElementMod.MOD_ID);
+        // Reference the item to avoid "never used" warnings
+        UPGRADER_I.getTranslationKey();
     }
 }
