@@ -5,6 +5,7 @@ import hs.elementmod.config.ConfigManager;
 import hs.elementmod.data.DataStore;
 import hs.elementmod.elements.ElementRegistry;
 import hs.elementmod.elements.abilities.AbilityManager;
+import hs.elementmod.items.ModItems;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
 import hs.elementmod.network.NetworkHandler;
@@ -42,19 +43,23 @@ public class ElementMod implements ModInitializer {
         instance = this;
         LOGGER.info("Initializing Element Mod (Fabric 1.21.10)...");
 
-        // Step 1: Register network packets FIRST (before server starts)
+        // Step 1: Register items FIRST (before anything else uses them)
+        LOGGER.info("Registering items...");
+        ModItems.initialize();
+
+        // Step 2: Register network packets
         LOGGER.info("Registering network packets...");
         NetworkHandler.registerPackets();
 
-        // Step 2: Register lifecycle events
+        // Step 3: Register lifecycle events
         LOGGER.info("Registering lifecycle events...");
         registerLifecycleEvents();
 
-        // Step 3: Register commands
+        // Step 4: Register commands
         LOGGER.info("Registering commands...");
         registerCommands();
 
-        // Step 4: Register recipes
+        // Step 5: Register recipes
         LOGGER.info("Registering recipes...");
         RecipeManager.registerRecipes();
 

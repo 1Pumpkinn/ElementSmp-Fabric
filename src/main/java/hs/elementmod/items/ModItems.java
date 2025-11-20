@@ -1,12 +1,12 @@
 package hs.elementmod.items;
 
 import hs.elementmod.ElementMod;
-import hs.elementmod.elements.ElementType;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.item.ItemGroups;
 import net.minecraft.util.Identifier;
 
 /**
@@ -14,36 +14,43 @@ import net.minecraft.util.Identifier;
  */
 public class ModItems {
 
-    // Item instances
-    public static final Item UPGRADER_1 = register("upgrader_1", new Upgrader1Item(new Item.Settings()));
-    public static final Item UPGRADER_2 = register("upgrader_2", new Upgrader2Item(new Item.Settings()));
-    public static final Item REROLLER = register("element_reroller", new RerollerItem(new Item.Settings()));
-    public static final Item ADVANCED_REROLLER = register("advanced_reroller", new AdvancedRerollerItem(new Item.Settings()));
-    public static final Item LIFE_CORE = register("life_core", new ElementCoreItem(new Item.Settings(), ElementType.LIFE));
-    public static final Item DEATH_CORE = register("death_core", new ElementCoreItem(new Item.Settings(), ElementType.DEATH));
+    public static Item UPGRADER_1;
+    public static Item UPGRADER_2;
+    public static Item REROLLER;
+    public static Item ADVANCED_REROLLER;
+    public static Item LIFE_CORE;
+    public static Item DEATH_CORE;
 
-    /**
-     * Register an item in Fabric
-     */
-    private static Item register(String name, Item item) {
-        return Registry.register(Registries.ITEM, new Identifier(ElementMod.MOD_ID, name), item);
+    private static Item register(String name) {
+
+        Identifier id = Identifier.of(ElementMod.MOD_ID, name);
+        RegistryKey<Item> key = RegistryKey.of(Registries.ITEM.getKey(), id);
+
+        Item.Settings settings = new Item.Settings()
+                .registryKey(key);
+
+        return Registry.register(Registries.ITEM, key, new Item(settings));
     }
 
-    /**
-     * Initialize all items and add them to creative inventory
-     */
     public static void initialize() {
+
         ElementMod.LOGGER.info("Registering mod items...");
 
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(content -> {
-            content.add(UPGRADER_1);
-            content.add(UPGRADER_2);
-            content.add(REROLLER);
-            content.add(ADVANCED_REROLLER);
-            content.add(LIFE_CORE);
-            content.add(DEATH_CORE);
-        });
+        UPGRADER_1 = register("upgrader_1");
+        UPGRADER_2 = register("upgrader_2");
+        REROLLER = register("element_reroller");
+        ADVANCED_REROLLER = register("advanced_reroller");
+        LIFE_CORE = register("life_core");
+        DEATH_CORE = register("death_core");
 
-        ElementMod.LOGGER.info("Mod items registered successfully");
+        // Add to creative tab
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
+            entries.add(UPGRADER_1);
+            entries.add(UPGRADER_2);
+            entries.add(REROLLER);
+            entries.add(ADVANCED_REROLLER);
+            entries.add(LIFE_CORE);
+            entries.add(DEATH_CORE);
+        });
     }
 }

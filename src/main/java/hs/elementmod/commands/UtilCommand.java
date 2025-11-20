@@ -2,7 +2,7 @@ package hs.elementmod.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import hs.elementmod.items.ModItems;
+import hs.elementmod.items.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -23,13 +23,13 @@ public class UtilCommand {
             return 0;
         }
 
-        // Give all utility items
-        player.giveItemStack(new ItemStack(ModItems.UPGRADER_1, 1));
-        player.giveItemStack(new ItemStack(ModItems.UPGRADER_2, 1));
-        player.giveItemStack(new ItemStack(ModItems.REROLLER, 1));
-        player.giveItemStack(new ItemStack(ModItems.ADVANCED_REROLLER, 1));
-        player.giveItemStack(new ItemStack(ModItems.LIFE_CORE, 1));
-        player.giveItemStack(new ItemStack(ModItems.DEATH_CORE, 1));
+        // Use factory methods to create ItemStacks with NBT data
+        player.giveItemStack(Upgrader1Item.create());
+        player.giveItemStack(Upgrader2Item.create());
+        player.giveItemStack(RerollerItem.create());
+        player.giveItemStack(AdvancedRerollerItem.create());
+        player.giveItemStack(ElementCoreItem.createCore(hs.elementmod.elements.ElementType.LIFE));
+        player.giveItemStack(ElementCoreItem.createCore(hs.elementmod.elements.ElementType.DEATH));
 
         player.sendMessage(
                 Text.literal("✦ Gave you all utility items! ✦")
