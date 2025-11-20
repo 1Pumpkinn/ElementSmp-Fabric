@@ -176,21 +176,18 @@ public class ElementMod implements ModInitializer {
 
         // Player events
         PlayerEventListeners.register();
-
         // Combat events
         CombatEventListeners.register();
-
         // Item events
         ItemEventListeners.register();
-
         // Game mode events
         GameModeListener.register();
-
         // Fall damage cancellation (Air element)
         FallDamageListener.register();
-
         // Crafting events (requires mixin implementation)
         CraftingEventListeners.register();
+        //AbilityEventListener
+        AbilityEventListeners.register();
 
         LOGGER.info("All event listeners registered successfully");
     }
