@@ -45,7 +45,7 @@ public class ElementMod implements ModInitializer {
 
         // Step 1: Register items FIRST (before anything else uses them)
         LOGGER.info("Registering items...");
-        ModItems.initialize();
+        ModItems.registerModItems();
 
 
 

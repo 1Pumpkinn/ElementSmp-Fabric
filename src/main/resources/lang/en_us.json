@@ -1,4 +1,11 @@
 {
+  "item.elementmod.upgrader_1": "Upgrader I",
+  "item.elementmod.upgrader_2": "Upgrader II",
+  "item.elementmod.element_reroller": "Reroller",
+  "item.elementmod.advanced_reroller": "Advanced Reroller",
+  "item.elementmod.life_core": "Life Core",
+  "item.elementmod.death_core": "Death Core",
+
   "key.categories.elementmod": "Element Mod",
   "key.elementmod.ability1": "Ability 1",
   "key.elementmod.ability2": "Ability 2"
