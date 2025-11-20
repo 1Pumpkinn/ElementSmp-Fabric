@@ -49,14 +49,7 @@ public class ModItems {
      * Called during mod initialization
      */
     public static void registerModItems() {
-        ElementMod.LOGGER.info("Registering Mod Items for " + ElementMod.MOD_ID);
-
-        // Log each item registration
-        ElementMod.LOGGER.info("Registered: {}", UPGRADER_I.getTranslationKey());
-        ElementMod.LOGGER.info("Registered: {}", UPGRADER_II.getTranslationKey());
-        ElementMod.LOGGER.info("Registered: {}", ELEMENT_REROLLER.getTranslationKey());
-        ElementMod.LOGGER.info("Registered: {}", ADVANCED_REROLLER.getTranslationKey());
-        ElementMod.LOGGER.info("Registered: {}", LIFE_CORE.getTranslationKey());
-        ElementMod.LOGGER.info("Registered: {}", DEATH_CORE.getTranslationKey());
+        // Registering items — keep a single informative log entry
+        ElementMod.LOGGER.info("Registered mod items for {}", ElementMod.MOD_ID);
     }
 }

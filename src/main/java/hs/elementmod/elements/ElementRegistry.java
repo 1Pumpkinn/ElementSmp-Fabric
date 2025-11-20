@@ -39,10 +39,14 @@ public class ElementRegistry {
         registerElement(ElementType.EARTH, new EarthElement(mod));
         registerElement(ElementType.LIFE, new LifeElement(mod));
 
-        // TODO: Add these as they are implemented:
-        // registerElement(ElementType.DEATH, new DeathElement(mod));
-        // registerElement(ElementType.METAL, new MetalElement(mod));
-        // registerElement(ElementType.FROST, new FrostElement(mod));
+        // Additional implemented elements
+        // Death element may be added later
+        try {
+            // Metal element implemented below - load if available
+            registerElement(ElementType.METAL, new hs.elementmod.elements.impl.metal.MetalElement(mod));
+        } catch (NoClassDefFoundError | Exception e) {
+            ElementMod.LOGGER.debug("Metal element not present or failed to load: {}", e.toString());
+        }
 
         ElementMod.LOGGER.info("Element registry initialized with {} elements", elements.size());
     }

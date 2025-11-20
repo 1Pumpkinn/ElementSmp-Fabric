@@ -33,7 +33,7 @@ public class RecipeManager {
     }
 
     private static void registerUpgrader1Recipe() {
-        Identifier id = Identifier.of(ElementMod.MOD_ID, "upgrader_1");
+    Identifier id = Identifier.of(ElementMod.MOD_ID, "upgrader_i");
 
         DefaultedList<Optional<Ingredient>> inputs = DefaultedList.ofSize(9, Optional.empty());
         inputs.set(0, Optional.of(Ingredient.ofItems(Items.GOLD_BLOCK)));
@@ -57,7 +57,7 @@ public class RecipeManager {
     }
 
     private static void registerUpgrader2Recipe() {
-        Identifier id = Identifier.of(ElementMod.MOD_ID, "upgrader_2");
+    Identifier id = Identifier.of(ElementMod.MOD_ID, "upgrader_ii");
 
         DefaultedList<Optional<Ingredient>> inputs = DefaultedList.ofSize(9, Optional.empty());
         inputs.set(0, Optional.of(Ingredient.ofItems(Items.DIAMOND_BLOCK)));
@@ -129,11 +129,11 @@ public class RecipeManager {
     }
 
     private static void registerLifeCoreRecipe() {
-        ElementMod.LOGGER.info("Life Core recipe registered (placeholder)");
+        // Life Core recipe not implemented yet (placeholder)
     }
 
     private static void registerDeathCoreRecipe() {
-        ElementMod.LOGGER.info("Death Core recipe registered (placeholder)");
+        // Death Core recipe not implemented yet (placeholder)
     }
 
     public static Map<Identifier, ShapedRecipe> getRecipes() {

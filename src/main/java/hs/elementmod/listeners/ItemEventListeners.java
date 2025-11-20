@@ -47,7 +47,7 @@ public class ItemEventListeners {
             return ActionResult.PASS;
         });
 
-        ElementMod.LOGGER.info("Item event listeners registered");
+                // Event listeners registered (quiet)
     }
 
     /**
