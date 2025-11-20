@@ -2,6 +2,8 @@ package hs.elementmod.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import hs.elementmod.items.ModItems;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,8 +23,37 @@ public class UtilCommand {
             return 0;
         }
 
-        player.sendMessage(Text.literal("Utility items will be added in item system implementation")
-                .formatted(Formatting.YELLOW), false);
+        // Give all utility items
+        player.giveItemStack(new ItemStack(ModItems.UPGRADER_1, 1));
+        player.giveItemStack(new ItemStack(ModItems.UPGRADER_2, 1));
+        player.giveItemStack(new ItemStack(ModItems.REROLLER, 1));
+        player.giveItemStack(new ItemStack(ModItems.ADVANCED_REROLLER, 1));
+        player.giveItemStack(new ItemStack(ModItems.LIFE_CORE, 1));
+        player.giveItemStack(new ItemStack(ModItems.DEATH_CORE, 1));
+
+        player.sendMessage(
+                Text.literal("✦ Gave you all utility items! ✦")
+                        .formatted(Formatting.GREEN, Formatting.BOLD),
+                false
+        );
+
+        player.sendMessage(
+                Text.literal("• Upgrader I & II - Right-click to upgrade")
+                        .formatted(Formatting.GRAY),
+                false
+        );
+
+        player.sendMessage(
+                Text.literal("• Reroller & Advanced Reroller - Right-click to reroll element")
+                        .formatted(Formatting.GRAY),
+                false
+        );
+
+        player.sendMessage(
+                Text.literal("• Life & Death Cores - Right-click to consume")
+                        .formatted(Formatting.GRAY),
+                false
+        );
 
         return 1;
     }

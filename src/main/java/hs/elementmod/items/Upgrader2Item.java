@@ -17,7 +17,7 @@ import java.util.Optional;
  * Factory class for Upgrader II items in Fabric
  */
 public final class Upgrader2Item {
-    private Upgrader2Item() {}
+    public Upgrader2Item() {}
 
     public static ItemStack create() {
         ItemStack stack = new ItemStack(Items.ECHO_SHARD);

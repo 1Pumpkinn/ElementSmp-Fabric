@@ -21,7 +21,7 @@ import java.util.Optional;
  * Converted from Paper's ItemStack/ItemMeta to Fabric's ItemStack/Components
  */
 public final class ElementCoreItem {
-    private ElementCoreItem() {}
+    public ElementCoreItem() {}
 
     private record ElementCoreProperties(
             Item material,

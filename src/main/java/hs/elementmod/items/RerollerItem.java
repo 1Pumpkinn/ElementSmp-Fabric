@@ -17,7 +17,7 @@ import java.util.Optional;
  * Factory classes for Reroller items in Fabric
  */
 public final class RerollerItem {
-    private RerollerItem() {}
+    public RerollerItem() {}
 
     public static ItemStack create() {
         ItemStack stack = new ItemStack(Items.HEART_OF_THE_SEA);

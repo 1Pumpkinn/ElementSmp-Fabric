@@ -17,7 +17,7 @@ import java.util.Optional;
  * Factory class for Advanced Reroller items in Fabric
  */
 public final class AdvancedRerollerItem {
-    private AdvancedRerollerItem() {}
+    public AdvancedRerollerItem() {}
 
     public static ItemStack create() {
         ItemStack stack = new ItemStack(Items.RECOVERY_COMPASS);

@@ -18,7 +18,7 @@ import java.util.Optional;
  * Converted from Paper to Fabric API
  */
 public final class Upgrader1Item {
-    private Upgrader1Item() {}
+    public Upgrader1Item() {}
 
     public static ItemStack create() {
         ItemStack stack = new ItemStack(Items.AMETHYST_SHARD);
