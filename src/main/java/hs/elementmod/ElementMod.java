@@ -93,7 +93,6 @@ public class ElementMod implements ModInitializer {
             ElementCommand.register(dispatcher);
             ManaCommand.register(dispatcher);
             TrustCommand.register(dispatcher);
-            UtilCommand.register(dispatcher);
             ElementInfoCommand.register(dispatcher);
             LOGGER.info("All commands registered successfully");
         });

@@ -3,6 +3,7 @@ package hs.elementmod.listeners;
 import hs.elementmod.ElementMod;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -15,10 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Unified ability activation listener for all elements
  * Handles keybind-based ability activation without per-element classes
  *
- * Uses right-click for abilities:
+ * Uses right-click for abilities ONLY when holding AIR (empty hand):
  * - Single right-click = Ability 1
  * - Shift + right-click = Ability 2
- * - Double right-click = Use item normally
+ * - Double right-click = Cancelled (do nothing)
  */
 public class AbilityEventListeners {
 
@@ -28,7 +29,7 @@ public class AbilityEventListeners {
     private static final Map<UUID, TapTracker> tapTrackers = new ConcurrentHashMap<>();
 
     public static void register() {
-        // Handle item right-click (main-hand only)
+        // Handle item right-click (main-hand only, ONLY WHEN EMPTY)
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClient() || hand != Hand.MAIN_HAND) {
                 return ActionResult.PASS;
@@ -38,7 +39,12 @@ public class AbilityEventListeners {
                 return ActionResult.PASS;
             }
 
-            handleAbilityActivation(serverPlayer);
+            // ONLY handle ability activation if hand is empty
+            ItemStack stack = serverPlayer.getStackInHand(hand);
+            if (stack.isEmpty()) {
+                handleAbilityActivation(serverPlayer);
+            }
+
             return ActionResult.PASS;
         });
 
@@ -81,7 +87,7 @@ public class AbilityEventListeners {
         if (tracker.ticksSinceLastTap <= DOUBLE_TAP_TICKS) {
             tracker.doubleTapped = true;
             tapTrackers.remove(id);
-            return; // allow normal item action
+            return; // cancel - do nothing
         }
 
         // First tap
