@@ -1,8 +1,21 @@
 {
   "schemaVersion": 1,
   "id": "elementmod",
-  "version": "1.0.0",
+  "version": "${version}",
   "name": "Element Mod",
+  "description": "An elemental abilities mod for Minecraft",
+  "authors": [
+    "YourName"
+  ],
+  "contact": {
+    "homepage": "https://example.com/",
+    "sources": "https://github.com/example/elementmod"
+  },
+  "license": "MIT",
+  "icon": "assets/elementmod/icon.png",
+
+  "environment": "*",
+
   "entrypoints": {
     "main": [
       "hs.elementmod.ElementMod"
@@ -11,10 +24,19 @@
       "hs.elementmod.client.ElementModClient"
     ]
   },
+
+  "mixins": [
+    "elementsmp-fabric.mixins.json"
+  ],
+
   "depends": {
     "fabricloader": ">=0.15.0",
-    "minecraft": "~1.21",
+    "minecraft": "~1.21.10",
     "java": ">=21",
     "fabric-api": "*"
+  },
+
+  "suggests": {
+    "another-mod": "*"
   }
 }

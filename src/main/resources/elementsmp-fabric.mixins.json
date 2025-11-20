@@ -4,6 +4,7 @@
   "package": "hs.elementmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "CraftingResultSlotMixin"
   ],
   "client": [
   ],

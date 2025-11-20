@@ -18,9 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main mod initializer for Element Mod (Fabric)
- * Converted from Paper plugin to Fabric mod
- * Now with unified ability system and all elements
+ * Main mod initializer for Element Mod (Fabric 1.21.10)
+ * Handles all server-side registration and initialization
  */
 public class ElementMod implements ModInitializer {
     public static final String MOD_ID = "elementmod";
@@ -28,6 +27,7 @@ public class ElementMod implements ModInitializer {
     private static ElementMod instance;
     private MinecraftServer server;
 
+    // Managers
     private DataStore dataStore;
     private ConfigManager configManager;
     private ElementManager elementManager;
@@ -40,42 +40,83 @@ public class ElementMod implements ModInitializer {
     @Override
     public void onInitialize() {
         instance = this;
-        LOGGER.info("Initializing Element Mod (Fabric)...");
+        LOGGER.info("Initializing Element Mod (Fabric 1.21.10)...");
 
-        // Register network packets FIRST (before server starts)
+        // Step 1: Register network packets FIRST (before server starts)
+        LOGGER.info("Registering network packets...");
         NetworkHandler.registerPackets();
 
-        // Register lifecycle events
-        ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
-        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
-        ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
-        ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
+        // Step 2: Register lifecycle events
+        LOGGER.info("Registering lifecycle events...");
+        registerLifecycleEvents();
 
-        // Register commands
+        // Step 3: Register commands
+        LOGGER.info("Registering commands...");
+        registerCommands();
+
+        // Step 4: Register recipes
+        LOGGER.info("Registering recipes...");
+        RecipeManager.registerRecipes();
+
+        LOGGER.info("Element Mod initialized successfully!");
+    }
+
+    /**
+     * Register server lifecycle events
+     */
+    private void registerLifecycleEvents() {
+        // Server starting - initialize managers
+        ServerLifecycleEvents.SERVER_STARTING.register(this::onServerStarting);
+
+        // Server started - start managers
+        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+
+        // Server stopping - cleanup
+        ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
+
+        // Server tick - mana regeneration
+        ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
+    }
+
+    /**
+     * Register all commands
+     */
+    private void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ElementCommand.register(dispatcher);
             ManaCommand.register(dispatcher);
             TrustCommand.register(dispatcher);
             UtilCommand.register(dispatcher);
             ElementInfoCommand.register(dispatcher);
+            LOGGER.info("All commands registered successfully");
         });
-
-        LOGGER.info("Element Mod initialized!");
     }
 
+    /**
+     * Called when server is starting - initialize managers
+     */
     private void onServerStarting(MinecraftServer server) {
         this.server = server;
+        LOGGER.info("Server starting - initializing managers...");
         initializeManagers();
-        registerListeners();
+        registerEventListeners();
     }
 
+    /**
+     * Called when server has started - start active managers
+     */
     private void onServerStarted(MinecraftServer server) {
+        LOGGER.info("Server started - starting active managers...");
         if (manaManager != null) {
             manaManager.start();
         }
     }
 
+    /**
+     * Called when server is stopping - save data and cleanup
+     */
     private void onServerStopping(MinecraftServer server) {
+        LOGGER.info("Server stopping - saving data...");
         if (dataStore != null) {
             dataStore.flushAll();
         }
@@ -84,51 +125,71 @@ public class ElementMod implements ModInitializer {
         }
     }
 
+    /**
+     * Called every server tick - update managers
+     */
     private void onServerTick(MinecraftServer server) {
         if (manaManager != null) {
             manaManager.tick(server);
         }
     }
 
+    /**
+     * Initialize all managers in the correct order
+     */
     private void initializeManagers() {
         LOGGER.info("Initializing managers...");
 
+        // Core managers first
         this.configManager = new ConfigManager();
         this.dataStore = new DataStore();
+
+        // Dependency managers
         this.trustManager = new TrustManager(dataStore);
         this.manaManager = new ManaManager(dataStore, configManager);
         this.abilityManager = new AbilityManager(this);
 
-        // ElementManager now creates ElementRegistry internally
+        // Element system
         this.elementManager = new ElementManager(
                 dataStore, manaManager, trustManager,
                 configManager, abilityManager, this
         );
-        // Get registry from manager
         this.elementRegistry = elementManager.getElementRegistry();
 
+        // Item manager
         this.itemManager = new ItemManager(manaManager, configManager);
-        RecipeManager.registerRecipes();
 
-        LOGGER.info("Managers initialized successfully");
+        LOGGER.info("All managers initialized successfully");
     }
 
-    private void registerListeners() {
-        LOGGER.info("Registering listeners...");
+    /**
+     * Register all event listeners
+     */
+    private void registerEventListeners() {
+        LOGGER.info("Registering event listeners...");
 
-        // NOTE: Ability activation is now handled via keybinds + network packets
-        // No need for AbilityEventListeners anymore
-
-        // Register other event listeners
+        // Player events
         PlayerEventListeners.register();
+
+        // Combat events
         CombatEventListeners.register();
+
+        // Item events
         ItemEventListeners.register();
+
+        // Game mode events
         GameModeListener.register();
+
+        // Fall damage cancellation (Air element)
         FallDamageListener.register();
 
-        LOGGER.info("Listeners registered successfully");
+        // Crafting events (requires mixin implementation)
+        CraftingEventListeners.register();
+
+        LOGGER.info("All event listeners registered successfully");
     }
 
+    // Getters for managers
     public static ElementMod getInstance() {
         return instance;
     }
