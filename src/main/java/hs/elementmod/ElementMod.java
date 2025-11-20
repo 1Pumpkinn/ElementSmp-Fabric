@@ -8,6 +8,7 @@ import hs.elementmod.elements.abilities.AbilityManager;
 import hs.elementmod.listeners.*;
 import hs.elementmod.managers.*;
 import hs.elementmod.network.NetworkHandler;
+import hs.elementmod.recipes.RecipeManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -103,11 +104,11 @@ public class ElementMod implements ModInitializer {
                 dataStore, manaManager, trustManager,
                 configManager, abilityManager, this
         );
-
         // Get registry from manager
         this.elementRegistry = elementManager.getElementRegistry();
 
         this.itemManager = new ItemManager(manaManager, configManager);
+        RecipeManager.registerRecipes();
 
         LOGGER.info("Managers initialized successfully");
     }
