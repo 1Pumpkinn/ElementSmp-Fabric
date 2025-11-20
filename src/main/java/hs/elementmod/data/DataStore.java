@@ -2,7 +2,6 @@ package hs.elementmod.data;
 
 import com.google.gson.*;
 import hs.elementmod.ElementMod;
-import hs.elementmod.elements.ElementType;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.*;
@@ -24,7 +23,34 @@ public class DataStore {
     private JsonObject serverData;
 
     public DataStore() {
-        this.dataDir = FabricLoader.getInstance().getConfigDir().resolve("elementmod").resolve("data");
+        // Prefer storing data in the current world's save folder when available so data is per-world.
+        // Fallback to config directory if no world folder is detected.
+        Path configDir = FabricLoader.getInstance().getConfigDir();
+        Path gameDir = FabricLoader.getInstance().getGameDir();
+
+        Path preferred = null;
+        try {
+            Path saves = gameDir.resolve("saves");
+            if (Files.exists(saves) && Files.isDirectory(saves)) {
+                // pick the first directory inside saves (typical singleplayer worlds)
+                try {
+                    Optional<Path> firstWorld = Files.list(saves)
+                            .filter(Files::isDirectory)
+                            .findFirst();
+                    if (firstWorld.isPresent()) {
+                        preferred = firstWorld.get().resolve("elementmod").resolve("data");
+                    }
+                } catch (IOException ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        if (preferred == null) {
+            preferred = configDir.resolve("elementmod").resolve("data");
+        }
+
+        this.dataDir = preferred;
         this.playerFile = dataDir.resolve("players.json");
         this.serverFile = dataDir.resolve("server.json");
         this.gson = new GsonBuilder().setPrettyPrinting().create();

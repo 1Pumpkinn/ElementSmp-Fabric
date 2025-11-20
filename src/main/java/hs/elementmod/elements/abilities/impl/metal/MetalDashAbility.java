@@ -34,14 +34,19 @@ public class MetalDashAbility extends BaseAbility {
 
         if (!(player.getEntityWorld() instanceof ServerWorld world)) return false;
 
-        Vec3d dir = player.getRotationVec(1.0f);
-        dir = new Vec3d(dir.x, Math.max(dir.y, 0.1), dir.z);
-        player.setVelocity(dir.multiply(3.0));
+        Vec3d dir = player.getRotationVec(1.0f).normalize();
+        dir = new Vec3d(dir.x, Math.max(dir.y, 0.05), dir.z).normalize();
+
+        // Store initial direction and context so tick handler can maintain movement and validate targets
+        DashState state = new DashState(player, dir, context);
+        activeDashes.put(player.getUuid(), state);
+
+        // initial velocity impulse
+        player.setVelocity(dir.multiply(3.2));
         player.velocityModified = true;
 
         world.playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, net.minecraft.sound.SoundCategory.PLAYERS, 1.0f, 1.2f);
 
-        activeDashes.put(player.getUuid(), new DashState(player, context));
         return true;
     }
 
@@ -55,7 +60,7 @@ public class MetalDashAbility extends BaseAbility {
                 DashState dash = entry.getValue();
                 ServerPlayerEntity player = dash.player;
 
-                if (!player.isAlive() || player.isRemoved() || dash.ticks >= 20) {
+                if (!player.isAlive() || player.isRemoved() || dash.ticks >= 18) {
                     // end dash
                     iterator.remove();
                     if (!dash.hitSomeone) {
@@ -64,21 +69,25 @@ public class MetalDashAbility extends BaseAbility {
                     continue;
                 }
 
-                Vec3d loc = new Vec3d(player.getX(), player.getY(), player.getZ());
-                world.spawnParticles(ParticleTypes.SMOKE, loc.x, loc.y + 1.0, loc.z, 6, 0.3, 0.3, 0.3, 0.02);
+                // Maintain dash velocity each tick for smooth movement
+                player.setVelocity(dash.direction.multiply(3.2));
+                player.velocityModified = true;
 
-                // Check for entities to hit
+                Vec3d loc = new Vec3d(player.getX(), player.getY(), player.getZ());
+                world.spawnParticles(ParticleTypes.CLOUD, loc.x, loc.y + 1.0, loc.z, 6, 0.12, 0.12, 0.12, 0.02);
+
+                // Check for entities to hit along the dash path
                 if (dash.ticks % 2 == 0) {
-                    for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, player.getBoundingBox().expand(3.0), e -> e != player && isValidTarget(dash.context, e))) {
+                    for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, player.getBoundingBox().expand(2.6), e -> e != player && isValidTarget(dash.context, e))) {
                         Vec3d entityPos = new Vec3d(entity.getX(), entity.getY(), entity.getZ());
-                        Vec3d knock = entityPos.subtract(loc).normalize().add(0, 0.2, 0).multiply(1.0);
+                        Vec3d knock = entityPos.subtract(loc).normalize().add(0, 0.25, 0).multiply(0.9);
                         entity.setVelocity(knock);
                         entity.velocityModified = true;
 
-                        // Damage
-                        entity.damage(world, player.getDamageSources().magic(), 4.0f);
+                        // damage using same pattern as other abilities
+                        entity.damage(world, player.getDamageSources().magic(), 6.0f);
 
-                        world.spawnParticles(ParticleTypes.CLOUD, entity.getX(), entity.getY(), entity.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
+                        world.spawnParticles(ParticleTypes.CRIT, entity.getX(), entity.getY() + 0.5, entity.getZ(), 8, 0.2, 0.2, 0.2, 0.01);
                         dash.hitSomeone = true;
                     }
                 }
@@ -126,12 +135,14 @@ public class MetalDashAbility extends BaseAbility {
 
     private static class DashState {
         final ServerPlayerEntity player;
+        final Vec3d direction;
         int ticks = 0;
         boolean hitSomeone = false;
         final ElementContext context;
 
-        DashState(ServerPlayerEntity player, ElementContext context) {
+        DashState(ServerPlayerEntity player, Vec3d direction, ElementContext context) {
             this.player = player;
+            this.direction = direction;
             this.context = context;
         }
     }

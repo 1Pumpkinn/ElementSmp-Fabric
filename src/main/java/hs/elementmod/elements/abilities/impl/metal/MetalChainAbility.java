@@ -62,7 +62,7 @@ public class MetalChainAbility extends BaseAbility {
         }
 
         if (chosen != null) {
-            // Create chain state
+            // Create chain state with smoother reel
             activeChains.put(player.getUuid(), new ChainState(player, chosen));
             world.playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.BLOCK_ANVIL_LAND, net.minecraft.sound.SoundCategory.PLAYERS, 1.0f, 1.0f);
             return true;
@@ -87,25 +87,32 @@ public class MetalChainAbility extends BaseAbility {
                     continue;
                 }
 
-                if (state.ticks >= 40) {
+                // Smooth reel: shorten duration as target gets closer
+                Vec3d eye = player.getEyePos();
+                Vec3d targetPos = new Vec3d(target.getX(), target.getY(), target.getZ());
+                double distance = eye.distanceTo(targetPos);
+
+                if (distance < 1.2 || state.ticks >= 60) {
                     // finished - apply stun to target
                     stunnedTicks.put(target.getUuid(), 60);
                     it.remove();
                     continue;
                 }
 
-                // Pull target toward player's eye
-                Vec3d eye = player.getEyePos();
-                Vec3d targetPos = new Vec3d(target.getX(), target.getY(), target.getZ());
-                Vec3d pull = eye.subtract(targetPos).normalize().multiply(0.6).add(0, 0.05, 0);
+                // Pull strength increases with distance but capped to avoid jerky motion
+                double strength = Math.min(1.2, Math.max(0.15, distance * 0.12));
+                Vec3d pull = eye.subtract(targetPos).normalize().multiply(strength).add(0, 0.05, 0);
                 target.setVelocity(pull);
                 target.velocityModified = true;
 
-                // chain particles along line
-                for (int i = 0; i < 6; i++) {
-                    double t = i / 6.0;
+                // more frequent particles for smoother visual chain
+                int steps = (int) Math.min(12, Math.max(6, Math.ceil(distance * 3)));
+                for (int i = 0; i <= steps; i++) {
+                    double t = (double) i / (double) Math.max(1, steps);
                     Vec3d pos = targetPos.lerp(eye, t);
+                    // small metallic spark and smoke
                     world.spawnParticles(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 1, 0, 0, 0, 0);
+                    if (i % 3 == 0) world.spawnParticles(ParticleTypes.SMOKE, pos.x, pos.y, pos.z, 1, 0.01, 0.01, 0.01, 0.0);
                 }
 
                 state.ticks++;

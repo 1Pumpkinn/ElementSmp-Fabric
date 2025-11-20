@@ -14,12 +14,12 @@ import java.util.function.Function;
 public class ModItems {
 
     // Upgraders
-    public static final Item UPGRADER_I = registerItem("upgrader_i", Item::new, new Item.Settings().maxCount(1));
-    public static final Item UPGRADER_II = registerItem("upgrader_ii", Item::new, new Item.Settings().maxCount(1));
+    public static final Item UPGRADER_I = registerItem("upgrader_i", Item::new, new Item.Settings().maxCount(16));
+    public static final Item UPGRADER_II = registerItem("upgrader_ii", Item::new, new Item.Settings().maxCount(16));
 
     // Rerollers
-    public static final Item ELEMENT_REROLLER = registerItem("element_reroller", Item::new, new Item.Settings().maxCount(1));
-    public static final Item ADVANCED_REROLLER = registerItem("advanced_reroller", Item::new, new Item.Settings().maxCount(1));
+    public static final Item ELEMENT_REROLLER = registerItem("element_reroller", Item::new, new Item.Settings().maxCount(16));
+    public static final Item ADVANCED_REROLLER = registerItem("advanced_reroller", Item::new, new Item.Settings().maxCount(16));
 
     // Element Cores
     public static final Item LIFE_CORE = registerItem("life_core", Item::new, new Item.Settings().maxCount(1));
