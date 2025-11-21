@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MetalChainAbility extends BaseAbility {
     private static final Map<UUID, ChainState> activeChains = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> stunnedTicks = new ConcurrentHashMap<>();
+    // store stun expiry in epoch millis for players and entities
+    private static final Map<UUID, Long> stunnedExpiry = new ConcurrentHashMap<>();
 
     public MetalChainAbility(ElementMod mod) {
         super("metal_chain", 50, 10, 1);
@@ -92,17 +93,31 @@ public class MetalChainAbility extends BaseAbility {
                 Vec3d targetPos = new Vec3d(target.getX(), target.getY(), target.getZ());
                 double distance = eye.distanceTo(targetPos);
 
+
                 if (distance < 1.2 || state.ticks >= 60) {
-                    // finished - apply stun to target
-                    stunnedTicks.put(target.getUuid(), 60);
+                    // finished - apply stun to target (store expiry in millis)
+                    long expiry = System.currentTimeMillis() + 60L * 50L; // 60 ticks -> ~3000ms
+                    stunnedExpiry.put(target.getUuid(), expiry);
                     it.remove();
                     continue;
                 }
 
-                // Pull strength increases with distance but capped to avoid jerky motion
-                double strength = Math.min(1.2, Math.max(0.15, distance * 0.12));
-                Vec3d pull = eye.subtract(targetPos).normalize().multiply(strength).add(0, 0.05, 0);
-                target.setVelocity(pull);
+                // Desired attach point slightly in front of player's eye
+                Vec3d look = player.getRotationVec(1.0f).normalize();
+                Vec3d desired = eye.subtract(look.multiply(0.6));
+
+                // Compute smooth velocity toward desired position
+                Vec3d delta = desired.subtract(targetPos);
+                // smoothing factor (smaller = smoother), then cap to avoid teleporting
+                Vec3d vel = delta.multiply(0.22);
+                double maxVel = 0.9; // cap velocity per tick
+                double vlen = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+                if (vlen > maxVel) {
+                    vel = vel.multiply(maxVel / vlen);
+                }
+                // small upward bias so target doesn't clip into player
+                vel = vel.add(0, 0.06, 0);
+                target.setVelocity(vel);
                 target.velocityModified = true;
 
                 // more frequent particles for smoother visual chain
@@ -118,23 +133,32 @@ public class MetalChainAbility extends BaseAbility {
                 state.ticks++;
             }
 
-            // Decrease stun ticks and enforce stun
-            Iterator<Map.Entry<UUID, Integer>> sit = stunnedTicks.entrySet().iterator();
+            // Enforce stun by expiry timestamp; freeze movement and cancel knockback by zeroing velocity
+            long now = System.currentTimeMillis();
+            Iterator<Map.Entry<UUID, Long>> sit = stunnedExpiry.entrySet().iterator();
             while (sit.hasNext()) {
-                Map.Entry<UUID, Integer> se = sit.next();
+                Map.Entry<UUID, Long> se = sit.next();
                 UUID uuid = se.getKey();
-                int remaining = se.getValue() - 1;
-                if (remaining <= 0) {
+                long expiry = se.getValue();
+                if (now >= expiry) {
                     sit.remove();
                     continue;
                 }
-                se.setValue(remaining);
 
-                // Attempt to get player and freeze movement
+                // Attempt to get an entity first (players and mobs)
                 ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(uuid);
                 if (p != null && p.isAlive() && !p.isRemoved()) {
                     p.setVelocity(0, 0, 0);
                     p.velocityModified = true;
+                    // also teleport slightly to avoid small drift due to server corrections
+                    // keep position unchanged to prevent sneak-like drift
+                } else {
+                    // try as generic entity
+                    var maybe = world.getEntity(uuid);
+                    if (maybe instanceof LivingEntity ent && ent.isAlive() && !ent.isRemoved()) {
+                        ent.setVelocity(0, 0, 0);
+                        ent.velocityModified = true;
+                    }
                 }
             }
         });
