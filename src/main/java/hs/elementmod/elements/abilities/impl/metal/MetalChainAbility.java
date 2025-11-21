@@ -26,7 +26,7 @@ public class MetalChainAbility extends BaseAbility {
 
     public MetalChainAbility(ElementMod mod) {
         super("metal_chain", 50, 10, 1);
-    registerTickHandler();
+        registerTickHandler();
     }
 
     @Override
@@ -74,7 +74,7 @@ public class MetalChainAbility extends BaseAbility {
 
     private void registerTickHandler() {
         ServerTickEvents.END_WORLD_TICK.register(world -> {
-            if (activeChains.isEmpty() && stunnedTicks.isEmpty()) return;
+            if (activeChains.isEmpty() && stunnedExpiry.isEmpty()) return;
 
             Iterator<Map.Entry<UUID, ChainState>> it = activeChains.entrySet().iterator();
             while (it.hasNext()) {
